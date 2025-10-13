@@ -9,6 +9,7 @@ from transformers import AutoModel, AutoTokenizer, AutoModelForSequenceClassific
 sys.path.append(os.path.join(os.path.dirname(__file__), 'intent-classification'))
 sys.path.append(os.path.join(os.path.dirname(__file__), 'risk-detection'))
 sys.path.append(os.path.join(os.path.dirname(__file__), 'emotion-classifier'))
+sys.path.append(os.path.join(os.path.dirname(__file__), 'cognitive-distortion'))
 
 # Intent Classification Model
 @st.cache_resource
@@ -135,7 +136,7 @@ st.set_page_config(
 )
 
 st.title('🧠 Mental Health Text Analysis')
-st.write("This app analyzes text for intent classification and suicide risk detection.")
+st.write("This app analyzes text for emotions, cognitive distortions, intent classification, and suicide risk detection.")
 
 # Custom Emotion Classification Model
 @st.cache_resource
@@ -239,11 +240,45 @@ def predict_emotion(text, model_data):
     except Exception as e:
         return f"Error: {e}"
 
+# Cognitive Distortion Model
+@st.cache_resource
+def load_cognitive_distortion_model():
+    """Load the cognitive distortion detection model"""
+    try:
+        # Use the absolute import path
+        cognitive_model_path = os.path.join(os.path.dirname(__file__), 'cognitive-distortion')
+        sys.path.append(cognitive_model_path)
+        from cognitive_distortion_model import CognitiveDistortionModel
+        
+        model = CognitiveDistortionModel()
+        success = model.load_model()
+        if success:
+            st.success("Cognitive distortion model loaded successfully!")
+            return model
+        else:
+            st.error("Failed to load cognitive distortion model")
+            return None
+    except Exception as e:
+        st.error(f"Error loading cognitive distortion model: {e}")
+        return None
+
+def predict_cognitive_distortions(text, model):
+    """Predict cognitive distortions in text"""
+    if model is None:
+        return {"error": "Model not loaded"}
+    
+    try:
+        result = model.predict(text)
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+
 # Load models
 with st.spinner("Loading models..."):
     intent_classifier = load_intent_classifier()
     suicide_model, suicide_tokenizer = load_suicide_risk_model()
     emotion_classifier = load_emotion_classifier()
+    cognitive_distortion_model = load_cognitive_distortion_model()
 
 # Input section
 st.subheader("Enter text for analysis:")
@@ -260,7 +295,10 @@ example_texts = [
     "Can you help me schedule an appointment?",
     "Thank you for your support",
     "I feel like there's no way out of this situation",
-    "I need some coping strategies for my anxiety"
+    "I need some coping strategies for my anxiety",
+    "I always mess everything up and I'll never succeed at anything",
+    "My friend didn't reply to my message, they must be angry with me",
+    "If I don't get this job, my life is completely ruined"
 ]
 
 selected_example = st.selectbox(
@@ -276,7 +314,7 @@ if st.button('🔍 Analyze Text', type="primary"):
         st.warning("Please enter some text to analyze.")
     else:
         # Create tabs for different analysis results
-        tabs = st.tabs(["😊 Emotion", "🎯 Intent", "⚠️ Risk Assessment"])
+        tabs = st.tabs(["😊 Emotion", "🧩 Cognitive Distortions", "🎯 Intent", "⚠️ Risk Assessment"])
         
         # Emotion Classification Tab
         with tabs[0]:
@@ -334,8 +372,76 @@ if st.button('🔍 Analyze Text', type="primary"):
             else:
                 st.error(emotion_result)
         
-        # Intent Classification Tab
+        # Cognitive Distortions Tab
         with tabs[1]:
+            st.subheader('🧩 Cognitive Distortion Analysis')
+            with st.spinner("Analyzing cognitive distortions..."):
+                distortion_result = predict_cognitive_distortions(user_input, cognitive_distortion_model)
+            
+            if "error" in distortion_result:
+                st.error(distortion_result["error"])
+            elif "distortions" in distortion_result:
+                distortions = distortion_result["distortions"]
+                
+                if distortions:
+                    st.write("### Detected Cognitive Distortions")
+                    
+                    # Show top 3 distortions
+                    for i, dist in enumerate(distortions[:3]):
+                        distortion_type = dist["distortion_type"]
+                        confidence = dist["confidence"] * 100
+                        
+                        # Use appropriate emoji for each distortion type
+                        emoji_map = {
+                            "all-or-nothing thinking": "⚫⚪",
+                            "catastrophizing": "💥",
+                            "fortune-telling": "🔮",
+                            "labeling": "🏷️",
+                            "magnification or minimization": "🔍",
+                            "mental filtering": "🧠",
+                            "mind reading": "👁️",
+                            "overgeneralization": "🌐",
+                            "personalization": "👤",
+                            "should statements": "📜"
+                        }
+                        
+                        emoji = emoji_map.get(distortion_type, "🧩")
+                        
+                        # Display distortion with confidence
+                        st.write(f"**{i+1}. {emoji} {distortion_type.title()}**: {confidence:.2f}%")
+                        st.progress(dist["confidence"])
+                        
+                        # Display collapsible explanation and reframing
+                        with st.expander(f"Learn about {distortion_type.title()}"):
+                            if cognitive_distortion_model:
+                                explanation = cognitive_distortion_model.get_distortion_explanation(distortion_type)
+                                reframing = cognitive_distortion_model.get_reframing_suggestion(distortion_type)
+                                st.write(f"**What it is**: {explanation}")
+                                st.write(f"**How to reframe it**: {reframing}")
+                    
+                    # Create a bar chart for visualization
+                    chart_data = {
+                        "Distortion": [d["distortion_type"].title() for d in distortions[:5]],
+                        "Confidence": [d["confidence"] for d in distortions[:5]]
+                    }
+                    st.bar_chart(chart_data, x="Distortion", y="Confidence", height=300)
+                    
+                    # Additional CBT suggestions
+                    st.subheader("💡 CBT-Based Suggestions")
+                    st.write("""
+                    Try these evidence-based techniques to challenge distorted thinking:
+                    
+                    1. **Thought Record**: Write down the automatic thought and identify the distortion.
+                    2. **Evidence Examination**: List evidence that supports and contradicts the thought.
+                    3. **Alternative Perspective**: Consider how someone else might view this situation.
+                    4. **Decatastrophizing**: If the worst happens, what could you do to cope?
+                    5. **Behavioral Experiment**: Test the thought by gathering real-world evidence.
+                    """)
+                else:
+                    st.write("No significant cognitive distortions detected.")
+        
+        # Intent Classification Tab
+        with tabs[2]:
             st.subheader('🎯 Intent Classification')
             with st.spinner("Analyzing intent..."):
                 intent_result = predict_intent(user_input, intent_classifier)
@@ -349,7 +455,7 @@ if st.button('🔍 Analyze Text', type="primary"):
                 st.error(intent_result)
         
         # Risk Assessment Tab
-        with tabs[2]:
+        with tabs[3]:
             st.subheader('⚠️ Suicide Risk Assessment')
             with st.spinner("Assessing risk level..."):
                 risk_result = predict_suicide_risk(user_input, suicide_model, suicide_tokenizer)
@@ -372,6 +478,8 @@ if st.button('🔍 Analyze Text', type="primary"):
 with st.expander("ℹ️ About this tool"):
     st.write("""
     **Emotion Classification**: Custom emotion analysis model that detects 28 different emotions including joy, sadness, anger, fear, love, and more. The model provides a detailed breakdown of the emotional content in text.
+    
+    **Cognitive Distortion Detection**: Identifies common cognitive distortions like all-or-nothing thinking, catastrophizing, mind reading, and more. Based on cognitive-behavioral therapy (CBT) principles.
     
     **Intent Classification**: Identifies the purpose or intent behind the input text (e.g., seeking help, expressing gratitude, etc.)
     
