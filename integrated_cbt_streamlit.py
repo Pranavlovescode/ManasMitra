@@ -7,14 +7,24 @@ import random
 import numpy as np
 from transformers import BertModel, AutoTokenizer, AutoModelForSequenceClassification, pipeline
 
+# Debug imports and paths
+print(f"Python version: {sys.version}")
+print(f"Current working directory: {os.getcwd()}")
+print(f"Files in cognitive_distortion directory:")
+cognitive_distortion_path = os.path.join(os.path.dirname(__file__), 'cognitive_distortion')
+try:
+    print(os.listdir(cognitive_distortion_path))
+except Exception as e:
+    print(f"Error listing cognitive_distortion directory: {e}")
+
 # Import the CBT engine
 from cbt import CBTEngine
 
 # Add the project folders to the path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'intent-classification'))
+sys.path.append(os.path.join(os.path.dirname(__file__), 'intent_classification'))
 sys.path.append(os.path.join(os.path.dirname(__file__), 'risk-detection'))
-sys.path.append(os.path.join(os.path.dirname(__file__), 'emotion-classifier'))
-sys.path.append(os.path.join(os.path.dirname(__file__), 'cognitive-distortion'))
+sys.path.append(os.path.join(os.path.dirname(__file__), 'emotion_classifier'))
+sys.path.append(os.path.join(os.path.dirname(__file__), 'cognitive_distortion'))
 
 # Import models (using try/except to handle potential import errors)
 try:
@@ -162,6 +172,20 @@ class CognitiveDistortionModelWrapper:
             "mental filtering": "all_or_nothing",  # Map to existing CBT engine category
             "should statements": "overgeneralization"  # Map to existing CBT engine category
         }
+        
+        # Emoji mappings for visual representation
+        self.emoji_map = {
+            "all-or-nothing thinking": "⚫⚪",
+            "catastrophizing": "💥",
+            "fortune-telling": "🔮",
+            "labeling": "🏷️",
+            "magnification or minimization": "🔍",
+            "mental filtering": "🧠",
+            "mind reading": "👁️",
+            "overgeneralization": "🌐",
+            "personalization": "👤",
+            "should statements": "📜"
+        }
     
     def analyze(self, text):
         """CBT engine can call .analyze() method"""
@@ -173,23 +197,67 @@ class CognitiveDistortionModelWrapper:
             
             if "distortions" in result and result["distortions"]:
                 distortions = []
+                distortion_details = []
+                
                 for dist in result["distortions"]:
                     dist_type = dist["distortion_type"]
                     confidence = dist["confidence"]
                     
-                    # Only include distortions with confidence > 0.5
-                    if confidence > 0.5:
+                    # Save the original distortion details for UI display
+                    distortion_details.append({
+                        "distortion_type": dist_type,
+                        "confidence": confidence,
+                        "emoji": self.emoji_map.get(dist_type, "🧩")
+                    })
+                    
+                    # Only include distortions with confidence > 0.3
+                    if confidence > 0.3:
                         # Map to CBT engine's expected distortion categories
                         mapped_distortion = self.distortion_map.get(dist_type)
                         if mapped_distortion:
                             distortions.append(mapped_distortion)
                 
-                return {"detected_distortions": distortions}
+                return {
+                    "detected_distortions": distortions,
+                    "distortion_details": distortion_details
+                }
             
         except Exception as e:
             st.error(f"Error in cognitive distortion detection: {e}")
         
         return {}
+        
+    def get_distortion_explanation(self, distortion_type):
+        """Get an explanation for the given distortion type"""
+        explanations = {
+            "all-or-nothing thinking": "Seeing things in absolute, black and white categories, with no middle ground.",
+            "catastrophizing": "Expecting the worst possible outcome to happen, often with limited evidence.",
+            "fortune-telling": "Predicting negative future events or outcomes without considering other possibilities.",
+            "mind reading": "Assuming you know what others are thinking without sufficient evidence.",
+            "overgeneralization": "Taking one negative event and applying it as a never-ending pattern of defeat.",
+            "personalization": "Taking excessive responsibility for external events or other people's behaviors.",
+            "labeling": "Assigning global negative traits to yourself or others based on specific behaviors.",
+            "magnification or minimization": "Exaggerating negatives and minimizing positives in your evaluation of events.",
+            "mental filtering": "Focusing exclusively on negative aspects while ignoring positive elements.",
+            "should statements": "Having rigid rules about how you or others should behave, leading to guilt and disappointment."
+        }
+        return explanations.get(distortion_type, "No explanation available for this distortion type.")
+    
+    def get_reframing_suggestion(self, distortion_type):
+        """Get a reframing suggestion for the given distortion type"""
+        suggestions = {
+            "all-or-nothing thinking": "Look for the grey areas and nuances in the situation. Consider that most situations fall somewhere between extremes.",
+            "catastrophizing": "Ask yourself what's most likely to happen instead of focusing on the worst scenario. Consider past similar situations and their actual outcomes.",
+            "fortune-telling": "Remind yourself that you cannot predict the future with certainty. Consider multiple possible outcomes, including positive ones.",
+            "mind reading": "Check your assumptions by asking for clarification or considering alternative interpretations of others' behaviors.",
+            "overgeneralization": "Look for specific counter-examples that contradict your generalization. Focus on this specific situation rather than applying it broadly.",
+            "personalization": "Consider all factors that might have contributed to the situation, not just your actions. Remember that many outcomes are influenced by multiple factors.",
+            "labeling": "Describe the specific behavior rather than applying a global label. Remind yourself that one action doesn't define a person's entire character.",
+            "magnification or minimization": "Try to evaluate both positive and negative aspects with equal weight. Ask if you would judge someone else this harshly.",
+            "mental filtering": "Deliberately look for positive aspects you might be filtering out. Ask what evidence contradicts your negative focus.",
+            "should statements": "Replace 'should' with more flexible language like 'I would prefer' or 'It would be helpful if.' Accept that people (including yourself) are imperfect."
+        }
+        return suggestions.get(distortion_type, "No reframing suggestion available for this distortion type.")
 
 # Suicide Risk Model Architecture
 class SuicideRiskModel(torch.nn.Module):
@@ -414,20 +482,28 @@ def load_cognitive_distortion_model():
     """Load the cognitive distortion detection model"""
     try:
         # Use the absolute import path
-        cognitive_model_path = os.path.join(os.path.dirname(__file__), 'cognitive-distortion')
+        cognitive_model_path = os.path.join(os.path.dirname(__file__), 'cognitive_distortion')
         sys.path.append(cognitive_model_path)
-        from cognitive_distortion_model import CognitiveDistortionModel
         
-        model = CognitiveDistortionModel()
-        success = model.load_model()
-        if success:
+        # Import using direct file loading to avoid path issues
+        import importlib.util
+        module_path = os.path.join(cognitive_model_path, 'cognitive_distortion_model.py')
+        if os.path.exists(module_path):
+            spec = importlib.util.spec_from_file_location("cognitive_distortion_model", module_path)
+            cognitive_distortion_module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(cognitive_distortion_module)
+            CognitiveDistortionModel = cognitive_distortion_module.CognitiveDistortionModel
+            
+            model = CognitiveDistortionModel()
+            model.load_model()
             st.success("Cognitive distortion model loaded successfully!")
             return model
         else:
-            st.error("Failed to load cognitive distortion model")
+            st.error(f"Cognitive distortion model file not found at {module_path}")
             return None
     except Exception as e:
         st.error(f"Error loading cognitive distortion model: {e}")
+        return None
         return None
 
 def predict_cognitive_distortions(text, model):
@@ -490,7 +566,8 @@ def initialize_cbt_engine():
     # Initialize CBT engine with enhanced configuration
     config = {
         "escalation_levels": ["high", "urgent"],
-        "models_loaded": model_status
+        "models_loaded": model_status,
+        "cognitive_wrapper": cognitive_wrapper  # Store the wrapper for later use
     }
     
     # Enhance CBT engine with cognitive distortion model if available
@@ -509,7 +586,13 @@ def initialize_cbt_engine():
             # First try with the cognitive model
             result = cognitive_wrapper.analyze(text)
             if result and "detected_distortions" in result and result["detected_distortions"]:
-                return result["detected_distortions"]
+                detected = result["detected_distortions"]
+                # Store distortion details for UI display
+                if "distortion_details" in result:
+                    if 'distortion_details' not in st.session_state:
+                        st.session_state['distortion_details'] = []
+                    st.session_state["distortion_details"] = result["distortion_details"]
+                return detected
             
             # Fall back to the original method if cognitive model didn't find anything
             return original_detect_distortions(text)
@@ -659,8 +742,48 @@ if st.button('🔍 Analyze with CBT Framework', type="primary"):
             distortions = cbt_result.get('distortions', [])
             if distortions:
                 st.write("**Cognitive Distortions Detected:**")
-                for distortion in distortions:
-                    st.write(f"• {distortion.replace('_', ' ').title()}")
+                
+                # Check if we have detailed distortion info from the model
+                detailed_distortions = st.session_state.get("distortion_details", [])
+                
+                # If we have detailed distortion info, use that for visualization
+                if detailed_distortions:
+                    for i, dist in enumerate(detailed_distortions[:3]):
+                        distortion_type = dist["distortion_type"]
+                        confidence = dist["confidence"] * 100
+                        
+                        # Use appropriate emoji for each distortion type
+                        emoji_map = {
+                            "all-or-nothing thinking": "⚫⚪",
+                            "catastrophizing": "💥",
+                            "fortune-telling": "🔮",
+                            "labeling": "🏷️",
+                            "magnification or minimization": "🔍",
+                            "mental filtering": "🧠",
+                            "mind reading": "👁️",
+                            "overgeneralization": "🌐",
+                            "personalization": "👤",
+                            "should statements": "📜"
+                        }
+                        
+                        emoji = emoji_map.get(distortion_type, "🧩")
+                        
+                        # Display distortion with confidence
+                        st.write(f"**{i+1}. {emoji} {distortion_type.title()}**: {confidence:.2f}%")
+                        st.progress(dist["confidence"])
+                        
+                        # Display collapsible explanation and reframing
+                        cognitive_wrapper = cbt_engine.config.get("cognitive_wrapper")
+                        if cognitive_wrapper:
+                            with st.expander(f"Learn about {distortion_type.title()}"):
+                                explanation = cognitive_wrapper.get_distortion_explanation(distortion_type)
+                                reframing = cognitive_wrapper.get_reframing_suggestion(distortion_type)
+                                st.write(f"**What it is**: {explanation}")
+                                st.write(f"**How to reframe it**: {reframing}")
+                else:
+                    # Just list the distortions simply if we don't have detailed info
+                    for distortion in distortions:
+                        st.write(f"• {distortion.replace('_', ' ').title()}")
             else:
                 st.write("✅ No major cognitive distortions detected")
         
