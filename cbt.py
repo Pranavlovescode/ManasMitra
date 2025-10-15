@@ -32,6 +32,11 @@ trained models by passing them into `CBTEngine(...)`.
 from typing import Any, Dict, Optional, Sequence
 import re
 import json
+import torch
+
+from intent_classification.app import load_classifier
+from emotion_classifier.emotion_model import LSTMEmotionClassifier, load_vocab, predict_emotion, emotion_labels
+from cognitive_distortion.cognitive_distortion_model import CognitiveDistortionModel
 
 
 class CBTEngine:
@@ -223,6 +228,58 @@ class DummyRiskModel:
 		if any(w in t for w in ["hurt myself", "self harm"]):
 			return {"level": "moderate", "score": 0.6}
 		return {"level": "low", "score": 0.1}
+	
+class LoadEmotionModel:
+	# import sys
+	# import os
+
+	# Add the emotion-classifier folder to the path
+	# sys.path.append(os.path.join(os.path.dirname(__file__), "emotion-classifier"))
+
+	# from emotion_model import LSTMEmotionClassifier, load_vocab, predict_emotion, emotion_labels
+
+	def __init__(self, model_path, vocab_path, device='cpu'):
+		self.device = torch.device(device)
+		self.vocab = load_vocab(vocab_path)
+		# Load model checkpoint
+		checkpoint = torch.load(model_path, map_location=self.device)
+		# Reconstruct model architecture
+		vocab_size = len(self.vocab)
+		embed_dim = checkpoint.get("embed_dim", 100)
+		hidden_dim = checkpoint.get("hidden_dim", 128)
+		num_classes = len(emotion_labels)
+		self.model = LSTMEmotionClassifier(vocab_size, embed_dim, hidden_dim, num_classes)
+		# self.model.load_state_dict(checkpoint["model_state_dict"])
+		state_dict = torch.load(model_path, map_location=self.device)
+		self.model.load_state_dict(state_dict, strict= False)
+		self.model.to(self.device)
+		print("Emotion model loaded.")
+	# def predict(self, text):
+	# 	return predict_emotion(text, self.model, self.vocab, self.device)
+	def predict(self, text):
+		preds = predict_emotion(text, self.model, self.vocab, self.device)
+		if preds:
+			top = sorted(preds, key=lambda x: x["score"], reverse=True)[0]
+			return {"emotion": top["label"], "score": top["score"]}
+		return {"emotion": "neutral", "score": 0.0}
+	
+
+class LoadCognitiveDistortionModel:
+	def __init__(self):
+		self.model     = CognitiveDistortionModel()
+		if self.model.model is not None:
+			print("Cognitive Distortion model loaded.")
+		else:
+			print("Cognitive Distortion model failed to load.")
+
+	def predict(self, text):
+		if self.model.model is None:
+			return {}
+		preds = self.model.predict(text)
+		if preds and isinstance(preds, list):
+			top = sorted(preds, key=lambda x: x["confidence"], reverse=True)[0]
+			return {"distortion": top["distortion_type"], "score": top["confidence"]}
+		return {}
 
 
 if __name__ == "__main__":
@@ -239,7 +296,11 @@ if __name__ == "__main__":
 		except EOFError:
 			demo_text = "I feel hopeless and I always mess up everything"
 
-	engine = CBTEngine(DummyEmotionModel(), DummyIntentModel(), DummyRiskModel())
+	emomodel=LoadEmotionModel("emotion_classifier/emotion_model.pth", "emotion_classifier/vocab.txt", device='cpu')
+	# cogdismodel = LoadCognitiveDistortionModel("cognitive_distortion/cognitive_distortion_model.pkl")
+	# intent_pipeline, intent_labels, intent_meta = load_classifier("intent_classification")
+
+	engine = CBTEngine(emomodel, DummyIntentModel(), DummyRiskModel())
 	result = engine.analyze(demo_text)
 	print(json.dumps(result, indent=2))
 

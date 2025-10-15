@@ -18,8 +18,8 @@ def create_and_save_model():
     )
     
     # Save model
-    torch.save(model.state_dict(), "emotion_model.pth")
-    print("Model saved to emotion_model.pth")
+    # torch.save(model.state_dict(), "emotion_model.pth")
+    
 
     # Save vocabulary (create a small example vocabulary)
     vocab = {"<PAD>": 0, "<UNK>": 1}
@@ -30,6 +30,13 @@ def create_and_save_model():
     
     for i, word in enumerate(common_words):
         vocab[word] = i + 2
+
+    torch.save({
+    "model_state_dict": model.state_dict(),
+    "embed_dim": 300,
+    "hidden_dim": 256,
+    "vocab_size": len(vocab),}, "emotion_model.pth")
+    print("Model saved to emotion_model.pth")
         
     # Save vocabulary
     with open("vocab.txt", "w") as f:

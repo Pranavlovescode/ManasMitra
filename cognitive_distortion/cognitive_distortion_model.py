@@ -40,7 +40,8 @@ class CognitiveDistortionModel:
         try:
             # If we don't have a saved model, use a pre-trained model
             # In a real implementation, you would save and load your trained model
-            self.tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+            # self.tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+            self.tokenizer = AutoTokenizer.from_pretrained("cognitive_distortion_model.pkl")
             self.model = AutoModelForSequenceClassification.from_pretrained(
                 "distilbert-base-uncased",
                 num_labels=len(self.label_classes)
