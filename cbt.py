@@ -29,6 +29,8 @@ locally without external dependencies. Replace the stub models with your
 trained models by passing them into `CBTEngine(...)`.
 """
 
+import os
+import sys
 from typing import Any, Dict, Optional, Sequence
 import re
 import json
@@ -37,6 +39,8 @@ import torch
 from intent_classification.app import load_classifier
 from emotion_classifier.emotion_model import LSTMEmotionClassifier, load_vocab, predict_emotion, emotion_labels
 from cognitive_distortion.cognitive_distortion_model import CognitiveDistortionModel
+sys.path.append(os.path.join(os.path.dirname(__file__), "risk-detection"))
+
 
 
 class CBTEngine:
@@ -263,23 +267,230 @@ class LoadEmotionModel:
 			return {"emotion": top["label"], "score": top["score"]}
 		return {"emotion": "neutral", "score": 0.0}
 	
+# ...existing code...
+class LoadIntentModel:
+    def __init__(self, model_dir=None):
+        base = os.path.dirname(__file__)
+        default_dir = os.path.join(base, "intent_classification")
+        model_dir = model_dir or default_dir
 
+        self.pipeline = None
+        self.labels = []
+        self.meta = {}
+        try:
+            # try package name first, then path
+            try:
+                res = load_classifier("intent_classification")
+            except Exception:
+                res = load_classifier(model_dir)
+
+            # load_classifier may return (pipeline, labels, meta) or a single pipeline
+            if isinstance(res, tuple):
+                # unpack safely
+                if len(res) == 3:
+                    self.pipeline, self.labels, self.meta = res
+                elif len(res) == 2:
+                    self.pipeline, self.labels = res
+                else:
+                    self.pipeline = res[0]
+            else:
+                self.pipeline = res
+            print("Intent classifier loaded.")
+        except Exception as e:
+            print(f"Failed to load intent classifier: {e}")
+            self.pipeline = None
+
+    def predict(self, text: str) -> Dict:
+        if not self.pipeline:
+            return {"intent": "none", "confidence": 0.0}
+        try:
+            # transformers-style / callable pipeline
+            if callable(self.pipeline):
+                preds = self.pipeline(text)
+                # transformer pipeline often returns list of dicts
+                if isinstance(preds, list) and preds:
+                    top = preds[0]
+                    if isinstance(top, dict):
+                        return {"intent": top.get("label") or top.get("intent") or str(top), "confidence": float(top.get("score") or top.get("confidence") or 0.0)}
+                # some custom pipelines return a dict
+                if isinstance(preds, dict):
+                    return {"intent": preds.get("label") or preds.get("intent") or "none", "confidence": float(preds.get("score") or preds.get("confidence") or 0.0)}
+
+            # scikit-learn like: predict_proba / predict
+            if hasattr(self.pipeline, "predict_proba"):
+                probs = self.pipeline.predict_proba([text])[0]
+                # numpy array or list
+                max_idx = int(probs.argmax()) if hasattr(probs, "argmax") else int(list(probs).index(max(probs)))
+                label = self.labels[max_idx] if self.labels and len(self.labels) > max_idx else str(max_idx)
+                return {"intent": label, "confidence": float(max(probs))}
+            if hasattr(self.pipeline, "predict"):
+                out = self.pipeline.predict([text])
+                label = out[0] if isinstance(out, (list, tuple)) else out
+                return {"intent": str(label), "confidence": 0.5}
+        except Exception:
+            pass
+        return {"intent": "none", "confidence": 0.0}
+# ...existing code...
+# replace demo instantiation near bottom
+# ...existing code...
+
+# class LoadCognitiveDistortionModel:
+	# def __init__(self):
+	# 	self.model     = CognitiveDistortionModel()
+	# 	if self.model.model is not None:
+	# 		print("Cognitive Distortion model loaded.")
+	# 	else:
+	# 		print("Cognitive Distortion model failed to load.")
+
+	# def predict(self, text):
+	# 	if self.model.model is None:
+	# 		return {}
+	# 	preds = self.model.predict(text)
+	# 	if preds and isinstance(preds, list):
+	# 		top = sorted(preds, key=lambda x: x["confidence"], reverse=True)[0]
+	# 		return {"distortion": top["distortion_type"], "score": top["confidence"]}
+	# 	return {}
+
+
+# ...existing code...
 class LoadCognitiveDistortionModel:
-	def __init__(self):
-		self.model     = CognitiveDistortionModel()
-		if self.model.model is not None:
-			print("Cognitive Distortion model loaded.")
-		else:
-			print("Cognitive Distortion model failed to load.")
+    def __init__(self, model_path=None):
+        base = os.path.dirname(__file__)
+        default_path = os.path.join(base, "cognitive_distortion", "cognitive_distortion_model.pkl")
+        model_path = model_path or default_path
+        model_path = os.path.abspath(model_path)
 
-	def predict(self, text):
-		if self.model.model is None:
-			return {}
-		preds = self.model.predict(text)
-		if preds and isinstance(preds, list):
-			top = sorted(preds, key=lambda x: x["confidence"], reverse=True)[0]
-			return {"distortion": top["distortion_type"], "score": top["confidence"]}
-		return {}
+        self.model = None
+        try:
+            # Prefer wrapper that can accept a path
+            try:
+                self.model = CognitiveDistortionModel(model_path)
+            except TypeError:
+                # older constructor: instantiate and try to load .pkl into internal model
+                self.model = CognitiveDistortionModel()
+                if os.path.exists(model_path):
+                    import pickle
+                    with open(model_path, "rb") as f:
+                        loaded = pickle.load(f)
+                    # attach loaded object if it looks like a model
+                    if hasattr(loaded, "predict") or hasattr(loaded, "__call__"):
+                        try:
+                            self.model.model = loaded
+                        except Exception:
+                            # best-effort: store raw object
+                            self.model._loaded_obj = loaded
+
+            # report status
+            if getattr(self.model, "model", None) is not None or getattr(self.model, "_loaded_obj", None) is not None:
+                print("Cognitive Distortion model loaded.")
+            else:
+                print("Cognitive Distortion model initialized (no internal model found).")
+        except Exception as e:
+            print(f"Cognitive Distortion model failed to load: {e}")
+            self.model = None
+
+    def predict(self, text):
+        if self.model is None:
+            return {}
+        try:
+            # Prefer wrapper.predict
+            if hasattr(self.model, "predict"):
+                preds = self.model.predict(text)
+            # Fallback to internal model.predict
+            elif getattr(self.model, "model", None) and hasattr(self.model.model, "predict"):
+                preds = self.model.model.predict(text)
+            # Fallback to callable internal object
+            elif getattr(self.model, "_loaded_obj", None) and callable(self.model._loaded_obj):
+                preds = self.model._loaded_obj(text)
+            else:
+                return {}
+
+            if preds and isinstance(preds, list):
+                top = sorted(preds, key=lambda x: x.get("confidence", 0), reverse=True)[0]
+                return {"distortion": top.get("distortion_type") or top.get("label"), "score": top.get("confidence") or top.get("score")}
+            if isinstance(preds, dict):
+                # try common keys
+                return {"distortion": preds.get("distortion_type") or preds.get("label"), "score": preds.get("confidence") or preds.get("score")}
+            return {}
+        except Exception:
+            return {}
+
+class LoadRiskModel:
+    def __init__(self, model_path=None, device='cpu'):
+        # Resolve default absolute path to the bundled checkpoint
+        base = os.path.dirname(__file__)
+        default_path = os.path.join(base, "risk-detection", "suicide_model.pth")
+        model_path = model_path or default_path
+        model_path = os.path.abspath(model_path)
+
+        self.device = torch.device(device)
+        self.model = None
+        self._checkpoint = None
+
+        try:
+            # Try importing a RiskDetectionModel from a package named risk_detection first
+            import importlib, importlib.util, glob
+            try:
+                rd_mod = importlib.import_module("risk_detection")
+                RiskCls = getattr(rd_mod, "RiskDetectionModel", None)
+                if RiskCls:
+                    self.model = RiskCls(model_path)
+            except Exception:
+                # If that fails, scan python files in risk-detection directory and look for RiskDetectionModel
+                rd_dir = os.path.join(base, "risk-detection")
+                for p in glob.glob(os.path.join(rd_dir, "*.py")):
+                    try:
+                        spec = importlib.util.spec_from_file_location("rd_mod", p)
+                        mod = importlib.util.module_from_spec(spec)
+                        spec.loader.exec_module(mod)
+                        if hasattr(mod, "RiskDetectionModel"):
+                            self.model = getattr(mod, "RiskDetectionModel")(model_path)
+                            break
+                    except Exception:
+                        # ignore modules that fail to load and continue searching
+                        continue
+
+            # If no runtime class was found, at least load the checkpoint so we can inspect it
+            if self.model is None:
+                self._checkpoint = torch.load(model_path, map_location=self.device)
+                # show keys for debugging
+                if isinstance(self._checkpoint, dict):
+                    print("Risk checkpoint loaded. Keys:", list(self._checkpoint.keys()))
+                else:
+                    print("Risk checkpoint loaded. Type:", type(self._checkpoint))
+
+            print("Risk Detection model loaded." if self.model else "Risk Detection checkpoint loaded (no runtime model constructed).")
+        except Exception as e:
+            print(f"Failed to load Risk Detection model/checkpoint: {e}")
+            self.model = None
+            self._checkpoint = None
+
+    def predict(self, text):
+        # If we have a runtime model object, prefer its predict method
+        if self.model is not None:
+            try:
+                preds = self.model.predict(text)
+                # normalize a few common shapes
+                if isinstance(preds, dict):
+                    return preds
+                if isinstance(preds, list) and preds:
+                    top = preds[0]
+                    if isinstance(top, dict):
+                        return {"level": top.get("risk_level") or top.get("level") or top.get("label"),
+                                "score": top.get("confidence") or top.get("score")}
+                return {}
+            except Exception:
+                return {}
+
+        # If only a checkpoint was loaded, we can't run model inference here without reconstructing the architecture.
+        # Provide a conservative keyword-based fallback for runtime usage.
+        t = text.lower()
+        if any(k in t for k in ["kill myself", "end my life", "suicide"]):
+            return {"level": "high", "score": 0.99}
+        if any(k in t for k in ["hurt myself", "self harm", "cut myself"]):
+            return {"level": "moderate", "score": 0.6}
+        return {"level": "low", "score": 0.1}
+# ...existing code...
 
 
 if __name__ == "__main__":
@@ -296,11 +507,13 @@ if __name__ == "__main__":
 		except EOFError:
 			demo_text = "I feel hopeless and I always mess up everything"
 
-	emomodel=LoadEmotionModel("emotion_classifier/emotion_model.pth", "emotion_classifier/vocab.txt", device='cpu')
+	emomodel = LoadEmotionModel("emotion_classifier/emotion_model.pth", "emotion_classifier/vocab.txt", device='cpu')
+	intentmodel = LoadIntentModel("intent_classification")
 	# cogdismodel = LoadCognitiveDistortionModel("cognitive_distortion/cognitive_distortion_model.pkl")
 	# intent_pipeline, intent_labels, intent_meta = load_classifier("intent_classification")
+	riskmodel = LoadRiskModel()
 
-	engine = CBTEngine(emomodel, DummyIntentModel(), DummyRiskModel())
+	engine = CBTEngine(emomodel, intentmodel, riskmodel)
 	result = engine.analyze(demo_text)
 	print(json.dumps(result, indent=2))
 

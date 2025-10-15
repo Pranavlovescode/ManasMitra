@@ -5,7 +5,7 @@ import sys
 import json
 import random
 import numpy as np
-from transformers import AutoModel, AutoTokenizer, AutoModelForSequenceClassification, pipeline
+from transformers import BertModel, AutoTokenizer, AutoModelForSequenceClassification, pipeline
 
 # Import the CBT engine
 from cbt import CBTEngine
@@ -215,7 +215,7 @@ class SuicideRiskModel(torch.nn.Module):
 @st.cache_resource
 def load_intent_classifier():
     """Load the intent classification model"""
-    model_dir = os.path.join(os.path.dirname(__file__), 'intent-classification')
+    model_dir = os.path.join(os.path.dirname(__file__), 'intent_classification')
     try:
         model = AutoModelForSequenceClassification.from_pretrained(model_dir)
         tokenizer = AutoTokenizer.from_pretrained(model_dir)
@@ -250,7 +250,8 @@ def load_suicide_risk_model():
     """Load the suicide risk detection model"""
     try:
         # Load BERT model and tokenizer
-        bert_model = AutoModel.from_pretrained("bert-base-uncased")
+        # use BertModel explicitly (some transformers builds don't expose AutoModel)
+        bert_model = BertModel.from_pretrained("bert-base-uncased")
         tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
         
         # Initialize the suicide risk model
