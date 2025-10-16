@@ -4,13 +4,23 @@ import os
 import sys
 import json
 from transformers import AutoModel, AutoTokenizer, AutoModelForSequenceClassification, pipeline
+import numpy as np
 
 # Import the CBT engine
 from cbt import CBTEngine
 
 # Add the project folders to the path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'intent-classification'))
+sys.path.append(os.path.join(os.path.dirname(__file__), 'intent_classification'))
 sys.path.append(os.path.join(os.path.dirname(__file__), 'risk-detection'))
+sys.path.append(os.path.join(os.path.dirname(__file__), 'emotion_classifier'))
+sys.path.append(os.path.join(os.path.dirname(__file__), 'cognitive_distortion'))
+
+# Import model components
+from emotion_classifier.emotion_model import LSTMEmotionClassifier, load_vocab, predict_emotion as lstm_predict_emotion, emotion_labels
+from cognitive_distortion.cognitive_distortion_model import CognitiveDistortionModel
+
+
+
 
 # Model wrapper classes to integrate with CBT engine
 class IntentModelWrapper:
@@ -87,24 +97,85 @@ class SuicideRiskModelWrapper:
             st.error(f"Error in risk prediction: {e}")
             return {"level": "low", "score": 0.0}
 
-class EmotionModelStub:
-    """Stub emotion model - replace with actual emotion classifier if available"""
-    
-    def predict(self, text):
-        """Simple rule-based emotion detection"""
-        text_lower = text.lower()
+
+# Custom Emotion Classification Model
+@st.cache_resource
+def load_emotion_classifier():
+    """Load the custom LSTM emotion classification model"""
+    try:
+        # Set up paths for model and vocabulary
+        model_path = os.path.join(os.path.dirname(__file__), 'emotion_classifier', 'emotion_model.pth')
+        vocab_path = os.path.join(os.path.dirname(__file__), 'emotion_classifier', 'vocab.txt')
+        device = torch.device('cpu')
         
-        # Simple emotion detection patterns
-        if any(word in text_lower for word in ['sad', 'depressed', 'hopeless', 'down', 'cry', 'tears']):
-            return {"emotion": "sad", "score": 0.8}
-        elif any(word in text_lower for word in ['anxious', 'worried', 'nervous', 'scared', 'panic', 'fear']):
-            return {"emotion": "anxious", "score": 0.8}
-        elif any(word in text_lower for word in ['angry', 'mad', 'furious', 'irritated', 'frustrated']):
-            return {"emotion": "angry", "score": 0.8}
-        elif any(word in text_lower for word in ['happy', 'joy', 'excited', 'good', 'great', 'wonderful']):
-            return {"emotion": "happy", "score": 0.8}
-        else:
-            return {"emotion": "neutral", "score": 0.5}
+        # Load vocabulary
+        vocab = load_vocab(vocab_path)
+        
+        try:
+            # Load the saved model data (including state dict and parameters)
+            model_data = torch.load(model_path, map_location=device)
+            
+            # Extract model parameters from saved data
+            embed_dim = model_data.get('embed_dim', 300)
+            hidden_dim = model_data.get('hidden_dim', 256)
+            vocab_size = model_data.get('vocab_size', len(vocab))
+            num_classes = len(emotion_labels)
+            
+            # Create model with the correct parameters
+            model = LSTMEmotionClassifier(vocab_size, embed_dim, hidden_dim, num_classes)
+            
+            # Load the actual state dict from the nested structure
+            if 'model_state_dict' in model_data:
+                model.load_state_dict(model_data['model_state_dict'])
+            else:
+                # Try loading directly if not nested
+                model.load_state_dict(model_data)
+        except Exception as e:
+            # Fallback to default parameters if loading fails
+            st.warning(f"Could not load model weights: {e}. Using default model.")
+            vocab_size = len(vocab)
+            embed_dim = 300
+            hidden_dim = 256
+            num_classes = len(emotion_labels)
+            model = LSTMEmotionClassifier(vocab_size, embed_dim, hidden_dim, num_classes)
+            
+        model.eval()
+        model.to(device)
+        
+        st.success("LSTM emotion classification model loaded successfully!")
+        return {
+            "model": model,
+            "vocab": vocab,
+            "device": device,
+            "emotion_labels": emotion_labels
+        }
+    except Exception as e:
+        st.error(f"Error loading emotion classification model: {e}")
+        return None
+
+def predict_emotion(text, model_data):
+    """Predict emotions from text using the LSTM model"""
+    if model_data is None:
+        return "Model not loaded"
+    
+    try:
+        # Extract model components from the model_data
+        model = model_data["model"]
+        vocab = model_data["vocab"]
+        device = model_data["device"]
+        
+        # Use the imported lstm_predict_emotion function from emotion_model.py
+        emotion_predictions = lstm_predict_emotion(text, model, vocab, device)
+        
+        if not emotion_predictions:
+            # If no emotions detected, add a neutral emotion
+            return [{"label": "neutral", "score": 1.0}]
+        
+        # Return the predictions in the expected format
+        return emotion_predictions
+    except Exception as e:
+        st.error(f"Error predicting emotion: {e}")
+        return [{"label": "neutral", "score": 1.0}]
 
 # Suicide Risk Model Architecture (same as before)
 class SuicideRiskModel(torch.nn.Module):
@@ -130,7 +201,7 @@ class SuicideRiskModel(torch.nn.Module):
 @st.cache_resource
 def load_intent_classifier():
     """Load the intent classification model"""
-    model_dir = os.path.join(os.path.dirname(__file__), 'intent-classification')
+    model_dir = os.path.join(os.path.dirname(__file__), 'intent_classification')
     try:
         model = AutoModelForSequenceClassification.from_pretrained(model_dir)
         tokenizer = AutoTokenizer.from_pretrained(model_dir)
@@ -168,21 +239,67 @@ def load_suicide_risk_model():
         st.error(f"Error loading suicide risk model: {e}")
         return None, None
 
+# Cognitive Distortion Model
+@st.cache_resource
+def load_cognitive_distortion_model():
+    """Load the cognitive distortion detection model"""
+    try:
+        from cognitive_distortion.cognitive_distortion_model import CognitiveDistortionModel
+        
+        model = CognitiveDistortionModel()
+        success = model.load_model()
+        if success:
+            st.success("Cognitive distortion model loaded successfully!")
+            return model
+        else:
+            st.error("Failed to load cognitive distortion model")
+            return None
+    except Exception as e:
+        st.error(f"Error loading cognitive distortion model: {e}")
+        return None
+
+class CognitiveDistortionModelWrapper:
+    """Wrapper for cognitive distortion model to work with CBT engine"""
+    
+    def __init__(self, model):
+        self.model = model
+    
+    def predict(self, text):
+        """CBT engine expects .predict() method"""
+        if self.model is None:
+            return {"distortion": "unknown", "confidence": 0.0}
+        
+        try:
+            results = self.model.predict(text)
+            if "distortions" in results and results["distortions"]:
+                # Get the top distortion
+                top_distortion = results["distortions"][0]
+                return {
+                    "distortion": top_distortion["distortion_type"],
+                    "score": top_distortion["confidence"]
+                }
+        except Exception as e:
+            st.error(f"Error in cognitive distortion prediction: {e}")
+        
+        return {"distortion": "unknown", "confidence": 0.0}
+
 @st.cache_resource
 def initialize_cbt_engine():
     """Initialize the CBT engine with loaded models"""
     # Load models
     intent_classifier = load_intent_classifier()
     suicide_model, suicide_tokenizer = load_suicide_risk_model()
+    emotion_model = load_emotion_classifier()
+    cognitive_distortion_model = load_cognitive_distortion_model()
     
     # Create model wrappers
     intent_wrapper = IntentModelWrapper(intent_classifier)
     risk_wrapper = SuicideRiskModelWrapper(suicide_model, suicide_tokenizer)
-    emotion_model = EmotionModelStub()  # Using stub for now
     
     # Initialize CBT engine
     config = {
-        "escalation_levels": ["high", "urgent"]
+        "escalation_levels": ["high", "urgent"],
+        "cognitive_distortion_model": cognitive_distortion_model  # Add cognitive distortion model to the config
     }
     
     cbt_engine = CBTEngine(
@@ -219,12 +336,14 @@ user_input = st.text_area(
 
 # Example texts for CBT analysis
 example_texts = [
-    "I always mess everything up and I'm never going to succeed at anything",
-    "Everyone thinks I'm stupid and they're probably right",
-    "This project is going to be a complete disaster and ruin my career",
-    "I can't handle this stress anymore, it feels overwhelming",
-    "I feel like there's no point in trying because I'll just fail again",
-    "Nobody really cares about me and I'm just bothering people"
+    "I always mess everything up and I'm never going to succeed at anything",  # all-or-nothing thinking
+    "Everyone thinks I'm stupid and they're probably right",  # mind reading
+    "This project is going to be a complete disaster and ruin my career",  # catastrophizing
+    "I can't handle this stress anymore, it feels overwhelming",  # emotional reasoning
+    "I feel like there's no point in trying because I'll just fail again",  # fortune telling
+    "Nobody really cares about me and I'm just bothering people",  # overgeneralization
+    "It's all my fault that the team project failed",  # personalization
+    "I should have known better than to try something so difficult"  # should statements
 ]
 
 selected_example = st.selectbox(

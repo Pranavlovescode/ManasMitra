@@ -6,6 +6,10 @@ import json
 import random
 import numpy as np
 from transformers import BertModel, AutoTokenizer, AutoModelForSequenceClassification, pipeline
+from emotion_classifier.emotion_model import LSTMEmotionClassifier, load_vocab, predict_emotion as lstm_predict_emotion, emotion_labels
+from cognitive_distortion.cognitive_distortion_model import CognitiveDistortionModel
+
+
 
 # Debug imports and paths
 print(f"Python version: {sys.version}")
@@ -112,40 +116,40 @@ class EmotionModelWrapper:
                 # Get the top emotion
                 top_emotion = emotion_results[0]
                 
-                # Map to simpler emotion categories for CBT engine
-                emotion_mapping = {
-                    "sadness": "sad",
-                    "grief": "sad",
-                    "disappointment": "sad",
-                    "remorse": "sad",
-                    "fear": "anxious",
-                    "nervousness": "anxious",
-                    "confusion": "anxious",
-                    "anger": "angry",
-                    "annoyance": "angry",
-                    "disapproval": "angry",
-                    "disgust": "angry",
-                    "joy": "happy",
-                    "amusement": "happy",
-                    "excitement": "happy",
-                    "gratitude": "happy",
-                    "love": "happy",
-                    "optimism": "happy",
-                    "relief": "happy",
-                    "pride": "happy",
-                    "admiration": "happy",
-                    "desire": "happy",
-                    "caring": "happy",
-                    "realization": "neutral",
-                    "surprise": "neutral",
-                    "neutral": "neutral",
-                    "embarrassment": "anxious"
-                }
+                # # Map to simpler emotion categories for CBT engine
+                # emotion_mapping = {
+                #     "sadness": "sad",
+                #     "grief": "sad",
+                #     "disappointment": "sad",
+                #     "remorse": "sad",
+                #     "fear": "anxious",
+                #     "nervousness": "anxious",
+                #     "confusion": "anxious",
+                #     "anger": "angry",
+                #     "annoyance": "angry",
+                #     "disapproval": "angry",
+                #     "disgust": "angry",
+                #     "joy": "happy",
+                #     "amusement": "happy",
+                #     "excitement": "happy",
+                #     "gratitude": "happy",
+                #     "love": "happy",
+                #     "optimism": "happy",
+                #     "relief": "happy",
+                #     "pride": "happy",
+                #     "admiration": "happy",
+                #     "desire": "happy",
+                #     "caring": "happy",
+                #     "realization": "neutral",
+                #     "surprise": "neutral",
+                #     "neutral": "neutral",
+                #     "embarrassment": "anxious"
+                # }
                 
-                mapped_emotion = emotion_mapping.get(top_emotion["label"].lower(), "neutral")
+                # mapped_emotion = emotion_mapping.get(top_emotion["label"].lower(), "neutral")
                 
                 return {
-                    "emotion": mapped_emotion,
+                    "emotion": top_emotion["label"].lower(),
                     "score": top_emotion["score"],
                     "original_emotion": top_emotion["label"]
                 }
@@ -376,32 +380,53 @@ def predict_suicide_risk(text, model, tokenizer):
     except Exception as e:
         return {"risk_score": 0.0, "risk_category": f"Error: {e}"}
 
+# Custom Emotion Classification Model
 @st.cache_resource
 def load_emotion_classifier():
-    """Load the custom emotion classification model"""
+    """Load the custom LSTM emotion classification model"""
     try:
-        # For demonstration, we'll use a transformer-based model that can work similarly to your LSTM
-        # We'll adapt the interface to match your custom model's output format
-        classifier = pipeline(
-            "text-classification", 
-            model="j-hartmann/emotion-english-distilroberta-base", 
-            return_all_scores=True,
-            device=-1  # Use CPU
-        )
+        # Set up paths for model and vocabulary
+        model_path = os.path.join(os.path.dirname(__file__), 'emotion_classifier', 'emotion_model.pth')
+        vocab_path = os.path.join(os.path.dirname(__file__), 'emotion_classifier', 'vocab.txt')
+        device = torch.device('cpu')
         
-        # Define the emotion labels from your custom model
-        emotion_labels = [
-            "admiration", "amusement", "anger", "annoyance", "approval",
-            "caring", "confusion", "curiosity", "desire", "disappointment",
-            "disapproval", "disgust", "embarrassment", "excitement", "fear",
-            "gratitude", "grief", "joy", "love", "nervousness", "optimism",
-            "pride", "realization", "relief", "remorse", "sadness",
-            "surprise", "neutral"
-        ]
+        # Load vocabulary
+        vocab = load_vocab(vocab_path)
         
-        st.success("Emotion classification model loaded successfully!")
+        # Load the saved model data (including state dict and parameters)
+        model_data = torch.load(model_path, map_location=device)
+        
+        # Extract model parameters from saved data
+        embed_dim = model_data.get('embed_dim', 300)
+        hidden_dim = model_data.get('hidden_dim', 256)
+        
+        # Get the actual vocabulary size from the state dict
+        actual_vocab_size = model_data['model_state_dict']['embedding.weight'].shape[0]
+        num_classes = len(emotion_labels)
+        
+        # Create model with the correct parameters
+        model = LSTMEmotionClassifier(actual_vocab_size, embed_dim, hidden_dim, num_classes)
+        
+        try:
+            # Load the actual state dict from the nested structure
+            if 'model_state_dict' in model_data:
+                model.load_state_dict(model_data['model_state_dict'])
+                st.success("Loaded model state_dict successfully!")
+            else:
+                # Try loading directly if not nested
+                model.load_state_dict(model_data)
+                st.success("Loaded model weights directly!")
+        except Exception as e:
+            st.warning(f"Could not load model weights: {e}. Using default model.")
+            
+        model.eval()
+        model.to(device)
+        
+        st.success("LSTM emotion classification model loaded successfully!")
         return {
-            "classifier": classifier,
+            "model": model,
+            "vocab": vocab,
+            "device": device,
             "emotion_labels": emotion_labels
         }
     except Exception as e:
@@ -409,73 +434,28 @@ def load_emotion_classifier():
         return None
 
 def predict_emotion(text, model_data):
-    """Predict emotions from text using custom model-like interface"""
+    """Predict emotions from text using the LSTM model"""
     if model_data is None:
         return "Model not loaded"
     
     try:
-        classifier = model_data["classifier"]
-        emotion_labels = model_data["emotion_labels"]
+        # Extract model components from the model_data
+        model = model_data["model"]
+        vocab = model_data["vocab"]
+        device = model_data["device"]
         
-        # Get predictions from transformer model
-        results = classifier(text)
-        transformer_emotions = results[0]
+        # Use the imported lstm_predict_emotion function from emotion_model.py
+        emotion_predictions = lstm_predict_emotion(text, model, vocab, device)
         
-        # Map the transformer emotions to our custom emotion labels
-        # This simulates the output format of your LSTM model
-        custom_emotion_results = []
+        if not emotion_predictions:
+            # If no emotions detected, add a neutral emotion
+            return [{"label": "neutral", "score": 1.0}]
         
-        # Simple mapping of some basic emotions
-        emotion_mapping = {
-            "joy": ["joy", "amusement", "excitement", "optimism", "gratitude"],
-            "sadness": ["sadness", "grief", "disappointment", "remorse"],
-            "anger": ["anger", "annoyance", "disapproval", "disgust"],
-            "fear": ["fear", "nervousness"],
-            "surprise": ["surprise", "realization"],
-            "disgust": ["disgust"],
-            "neutral": ["neutral"]
-        }
-        
-        # For each transformer emotion, map to multiple custom emotions
-        for result in transformer_emotions:
-            transformer_label = result["label"].lower()
-            score = result["score"]
-            
-            # Find which custom emotions correspond to this transformer emotion
-            for target_emotion, source_emotions in emotion_mapping.items():
-                if transformer_label in source_emotions:
-                    # Add all related emotions with slightly varied scores
-                    for i, emotion in enumerate(source_emotions):
-                        if emotion in emotion_labels:
-                            idx = emotion_labels.index(emotion)
-                            decay = 0.85 ** i  # Decrease score for secondary emotions
-                            custom_emotion_results.append({
-                                "label": emotion,
-                                "score": score * decay
-                            })
-        
-        # Add some other emotions with low scores for variety
-        for emotion in ["admiration", "love", "pride", "curiosity"]:
-            if emotion not in [r["label"] for r in custom_emotion_results]:
-                custom_emotion_results.append({
-                    "label": emotion,
-                    "score": random.uniform(0.05, 0.2)
-                })
-                
-        # Sort by score
-        custom_emotion_results.sort(key=lambda x: x["score"], reverse=True)
-        
-        # Remove duplicates (keep highest score)
-        seen = set()
-        final_results = []
-        for result in custom_emotion_results:
-            if result["label"] not in seen:
-                seen.add(result["label"])
-                final_results.append(result)
-        
-        return final_results
+        # Return the predictions in the expected format
+        return emotion_predictions
     except Exception as e:
-        return f"Error: {e}"
+        st.error(f"Error predicting emotion: {e}")
+        return [{"label": "neutral", "score": 1.0}]
 
 @st.cache_resource
 def load_cognitive_distortion_model():
