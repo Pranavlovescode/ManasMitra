@@ -9,15 +9,13 @@ import numpy as np
 # Import the CBT engine
 from cbt import CBTEngine
 
-# Add the project folders to the path
-sys.path.append(os.path.join(os.path.dirname(__file__), 'intent_classification'))
+# Add the project folders to the path (match actual hyphenated folder names)
+sys.path.append(os.path.join(os.path.dirname(__file__), 'intent-classification'))
 sys.path.append(os.path.join(os.path.dirname(__file__), 'risk-detection'))
-sys.path.append(os.path.join(os.path.dirname(__file__), 'emotion_classifier'))
-sys.path.append(os.path.join(os.path.dirname(__file__), 'cognitive_distortion'))
+sys.path.append(os.path.join(os.path.dirname(__file__), 'emotion-classifier'))
+sys.path.append(os.path.join(os.path.dirname(__file__), 'cognitive-distortion'))
 
-# Import model components
-from emotion_classifier.emotion_model import LSTMEmotionClassifier, load_vocab, predict_emotion as lstm_predict_emotion, emotion_labels
-from cognitive_distortion.cognitive_distortion_model import CognitiveDistortionModel
+# Note: We'll import cognitive model within its loader to avoid path issues
 
 
 
@@ -98,84 +96,73 @@ class SuicideRiskModelWrapper:
             return {"level": "low", "score": 0.0}
 
 
-# Custom Emotion Classification Model
+class EmotionModelWrapper:
+    """Wrapper for emotion classifier to work with CBTEngine."""
+    def __init__(self, model_data):
+        self.model_data = model_data
+
+    def predict(self, text: str):
+        if self.model_data is None:
+            return {"emotion": "neutral", "score": 0.0}
+        try:
+            results = predict_emotion(text, self.model_data)
+            if isinstance(results, list) and results:
+                top = results[0]
+                # Map to simpler CBT categories
+                mapping = {
+                    "joy": "happy", "love": "happy", "excitement": "happy", "gratitude": "happy",
+                    "relief": "happy", "optimism": "happy", "amusement": "happy", "pride": "happy",
+                    "sadness": "sad", "grief": "sad", "disappointment": "sad", "remorse": "sad",
+                    "anger": "angry", "annoyance": "angry", "disapproval": "angry", "disgust": "angry",
+                    "fear": "anxious", "nervousness": "anxious", "confusion": "anxious",
+                    "surprise": "neutral", "realization": "neutral", "neutral": "neutral"
+                }
+                mapped = mapping.get(top["label"].lower(), "neutral")
+                return {"emotion": mapped, "score": float(top.get("score", 0.0))}
+        except Exception as e:
+            st.error(f"Error in emotion prediction: {e}")
+        return {"emotion": "neutral", "score": 0.0}
+
+
 @st.cache_resource
 def load_emotion_classifier():
-    """Load the custom LSTM emotion classification model"""
+    """Load transformer-based emotion classifier (same approach as app_streamlit)."""
     try:
-        # Set up paths for model and vocabulary
-        model_path = os.path.join(os.path.dirname(__file__), 'emotion_classifier', 'emotion_model.pth')
-        vocab_path = os.path.join(os.path.dirname(__file__), 'emotion_classifier', 'vocab.txt')
-        device = torch.device('cpu')
-        
-        # Load vocabulary
-        vocab = load_vocab(vocab_path)
-        
-        try:
-            # Load the saved model data (including state dict and parameters)
-            model_data = torch.load(model_path, map_location=device)
-            
-            # Extract model parameters from saved data
-            embed_dim = model_data.get('embed_dim', 300)
-            hidden_dim = model_data.get('hidden_dim', 256)
-            vocab_size = model_data.get('vocab_size', len(vocab))
-            num_classes = len(emotion_labels)
-            
-            # Create model with the correct parameters
-            model = LSTMEmotionClassifier(vocab_size, embed_dim, hidden_dim, num_classes)
-            
-            # Load the actual state dict from the nested structure
-            if 'model_state_dict' in model_data:
-                model.load_state_dict(model_data['model_state_dict'])
-            else:
-                # Try loading directly if not nested
-                model.load_state_dict(model_data)
-        except Exception as e:
-            # Fallback to default parameters if loading fails
-            st.warning(f"Could not load model weights: {e}. Using default model.")
-            vocab_size = len(vocab)
-            embed_dim = 300
-            hidden_dim = 256
-            num_classes = len(emotion_labels)
-            model = LSTMEmotionClassifier(vocab_size, embed_dim, hidden_dim, num_classes)
-            
-        model.eval()
-        model.to(device)
-        
-        st.success("LSTM emotion classification model loaded successfully!")
-        return {
-            "model": model,
-            "vocab": vocab,
-            "device": device,
-            "emotion_labels": emotion_labels
-        }
+        classifier = pipeline(
+            "text-classification",
+            model="j-hartmann/emotion-english-distilroberta-base",
+            return_all_scores=True,
+            device=-1
+        )
+        # Supported labels from the upstream model; we keep this list for UI mapping if needed
+        emotion_labels = [
+            "admiration", "amusement", "anger", "annoyance", "approval",
+            "caring", "confusion", "curiosity", "desire", "disappointment",
+            "disapproval", "disgust", "embarrassment", "excitement", "fear",
+            "gratitude", "grief", "joy", "love", "nervousness", "optimism",
+            "pride", "realization", "relief", "remorse", "sadness",
+            "surprise", "neutral"
+        ]
+        st.success("Emotion classification model loaded successfully!")
+        return {"classifier": classifier, "emotion_labels": emotion_labels}
     except Exception as e:
         st.error(f"Error loading emotion classification model: {e}")
         return None
 
 def predict_emotion(text, model_data):
-    """Predict emotions from text using the LSTM model"""
+    """Predict emotions using the transformer classifier and return list of {label, score}."""
     if model_data is None:
         return "Model not loaded"
-    
     try:
-        # Extract model components from the model_data
-        model = model_data["model"]
-        vocab = model_data["vocab"]
-        device = model_data["device"]
-        
-        # Use the imported lstm_predict_emotion function from emotion_model.py
-        emotion_predictions = lstm_predict_emotion(text, model, vocab, device)
-        
-        if not emotion_predictions:
-            # If no emotions detected, add a neutral emotion
+        classifier = model_data["classifier"]
+        results = classifier(text)
+        if not results or not isinstance(results, list):
             return [{"label": "neutral", "score": 1.0}]
-        
-        # Return the predictions in the expected format
-        return emotion_predictions
+        # results[0] is a list of dicts with label/score
+        sorted_res = sorted(results[0], key=lambda x: x["score"], reverse=True)
+        return [{"label": r["label"], "score": float(r["score"]) } for r in sorted_res]
     except Exception as e:
-        st.error(f"Error predicting emotion: {e}")
-        return [{"label": "neutral", "score": 1.0}]
+        return f"Error: {e}"
 
 # Suicide Risk Model Architecture (same as before)
 class SuicideRiskModel(torch.nn.Module):
@@ -201,7 +188,7 @@ class SuicideRiskModel(torch.nn.Module):
 @st.cache_resource
 def load_intent_classifier():
     """Load the intent classification model"""
-    model_dir = os.path.join(os.path.dirname(__file__), 'intent_classification')
+    model_dir = os.path.join(os.path.dirname(__file__), 'intent-classification')
     try:
         model = AutoModelForSequenceClassification.from_pretrained(model_dir)
         tokenizer = AutoTokenizer.from_pretrained(model_dir)
@@ -244,7 +231,10 @@ def load_suicide_risk_model():
 def load_cognitive_distortion_model():
     """Load the cognitive distortion detection model"""
     try:
-        from cognitive_distortion.cognitive_distortion_model import CognitiveDistortionModel
+        # Import using the hyphenated folder by extending sys.path first
+        cognitive_model_path = os.path.join(os.path.dirname(__file__), 'cognitive-distortion')
+        sys.path.append(cognitive_model_path)
+        from cognitive_distortion_model import CognitiveDistortionModel
         
         model = CognitiveDistortionModel()
         success = model.load_model()
@@ -289,12 +279,13 @@ def initialize_cbt_engine():
     # Load models
     intent_classifier = load_intent_classifier()
     suicide_model, suicide_tokenizer = load_suicide_risk_model()
-    emotion_model = load_emotion_classifier()
+    emotion_classifier = load_emotion_classifier()
     cognitive_distortion_model = load_cognitive_distortion_model()
     
     # Create model wrappers
     intent_wrapper = IntentModelWrapper(intent_classifier)
     risk_wrapper = SuicideRiskModelWrapper(suicide_model, suicide_tokenizer)
+    emotion_wrapper = EmotionModelWrapper(emotion_classifier)
     
     # Initialize CBT engine
     config = {
@@ -303,7 +294,7 @@ def initialize_cbt_engine():
     }
     
     cbt_engine = CBTEngine(
-        emotion_model=emotion_model,
+        emotion_model=emotion_wrapper,
         intent_model=intent_wrapper,
         risk_model=risk_wrapper,
         config=config

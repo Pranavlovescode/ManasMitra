@@ -29,6 +29,114 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'intent_classification')
 sys.path.append(os.path.join(os.path.dirname(__file__), 'risk-detection'))
 sys.path.append(os.path.join(os.path.dirname(__file__), 'emotion_classifier'))
 sys.path.append(os.path.join(os.path.dirname(__file__), 'cognitive_distortion'))
+sys.path.append(os.path.join(os.path.dirname(__file__), 'voicebasedemotion'))
+
+# Optional voice emotion deps
+try:
+    import librosa  # used by voicebasedemotion.speechemotion
+    LIBROSA_AVAILABLE = True
+except Exception as _e:
+    LIBROSA_AVAILABLE = False
+
+# Voice emotion integration
+@st.cache_resource
+def load_voice_emotion_components():
+    """Load components from voicebasedemotion/speechemotion.py.
+    Returns (predict_fn, model, feature_extractor, id2label) or (None,...).
+    """
+    try:
+        from speechemotion import (
+            predict_emotion as predict_voice_emotion,
+            model as VOICE_MODEL,
+            feature_extractor as VOICE_FE,
+            id2label as VOICE_ID2LABEL,
+        )
+        return predict_voice_emotion, VOICE_MODEL, VOICE_FE, VOICE_ID2LABEL
+    except Exception as e:
+        st.warning(f"Voice emotion module not available: {e}")
+        return None, None, None, None
+
+def detect_voice_emotion_from_bytes(raw_bytes: bytes, filename: str = "audio.wav"):
+    """Persist bytes to a temp file and run voice emotion model.
+    Returns predicted label or None.
+    """
+    predict_fn, v_model, v_fe, id2label = load_voice_emotion_components()
+    if not predict_fn or not v_model or not v_fe or not id2label:
+        return None
+    if not LIBROSA_AVAILABLE:
+        st.warning("librosa is required for voice emotion detection.")
+        return None
+    import tempfile, os
+    suffix = os.path.splitext(filename)[1] or ".wav"
+    tmp_path = None
+    try:
+        # On Windows, keep delete=False and close handle before librosa opens it
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+            tmp.write(raw_bytes)
+            tmp_path = tmp.name
+        label = predict_fn(tmp_path, v_model, v_fe, id2label)
+        return label
+    except Exception as e:
+        st.error(f"Voice emotion detection failed: {e}")
+        return None
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            try:
+                os.remove(tmp_path)
+            except Exception:
+                pass
+
+# Local Whisper ASR (speech-to-text) using transformers
+@st.cache_resource
+def load_asr_pipeline():
+    try:
+        asr = pipeline(
+            task="automatic-speech-recognition",
+            model="openai/whisper-small",  # balanced size
+            device=-1,  # CPU
+            chunk_length_s=30,
+        )
+        return asr
+    except Exception as e:
+        st.warning(f"ASR pipeline not available: {e}")
+        return None
+
+def transcribe_audio_locally(raw_bytes: bytes, filename: str = "audio.wav"):
+    asr = load_asr_pipeline()
+    if asr is None:
+        return None
+    import tempfile, os
+    suffix = os.path.splitext(filename)[1] or ".wav"
+    tmp_path = None
+    try:
+        # Windows-safe temp file handling
+        with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+            tmp.write(raw_bytes)
+            tmp_path = tmp.name
+        # Prefer decoding audio ourselves to avoid external ffmpeg dependency
+        import librosa
+        target_sr = 16000
+        audio_array, sr = librosa.load(tmp_path, sr=target_sr, mono=True)
+        out = asr({"array": audio_array, "sampling_rate": target_sr})
+        if isinstance(out, dict) and "text" in out:
+            return out["text"]
+        if isinstance(out, str):
+            return out
+        return None
+    except Exception as e:
+        msg = str(e)
+        if "ffmpeg" in msg.lower():
+            st.error("Transcription failed: FFmpeg is missing. Either upload a WAV file or install FFmpeg and restart.")
+            st.info("Tip: WAV files usually work without FFmpeg. On Windows, you can install FFmpeg via winget or choco and add it to PATH.")
+        else:
+            st.error(f"Transcription failed: {e}")
+        return None
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            try:
+                os.remove(tmp_path)
+            except Exception:
+                pass
 
 # Import models (using try/except to handle potential import errors)
 try:
@@ -647,12 +755,44 @@ with st.expander("Model Status"):
 
 # Input section
 st.subheader("Share your thoughts and feelings:")
-user_input = st.text_area(
-    "What's on your mind?",
-    placeholder="Describe how you're feeling or what you're thinking about...",
-    height=150,
-    help="Share your thoughts, feelings, or concerns. The CBT engine will analyze and provide structured feedback."
-)
+
+input_mode = st.radio("Choose input mode:", ["Type", "Speak"], horizontal=True)
+
+user_input = ""
+audio_file = None
+transcribed_preview = None
+voice_label_preview = None
+
+if input_mode == "Type":
+    user_input = st.text_area(
+        "What's on your mind?",
+        placeholder="Describe how you're feeling or what you're thinking about...",
+        height=150,
+        help="Share your thoughts, feelings, or concerns. The CBT engine will analyze and provide structured feedback."
+    )
+else:
+    st.caption("Upload a short audio clip (≤ ~30s); we'll transcribe it with Whisper and analyze it. Emotion will be detected from voice.")
+    audio_file = st.file_uploader("Upload audio file", type=["wav", "mp3", "m4a", "ogg", "flac"], accept_multiple_files=False)
+    if audio_file is not None:
+        raw = audio_file.read()
+        st.audio(raw)
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("📝 Transcribe now"):
+                with st.spinner("Transcribing (Whisper)…"):
+                    transcribed_preview = transcribe_audio_locally(raw, audio_file.name)
+                if transcribed_preview:
+                    st.success("Transcription complete.")
+                    st.write("**Transcribed text:**")
+                    st.write(transcribed_preview)
+        with col2:
+            if st.button("�️ Detect voice emotion"):
+                with st.spinner("Analyzing voice emotion…"):
+                    voice_label_preview = detect_voice_emotion_from_bytes(raw, audio_file.name)
+                if voice_label_preview:
+                    st.success(f"Voice Emotion: {voice_label_preview}")
+                else:
+                    st.warning("Could not detect voice emotion.")
 
 # Example texts for CBT analysis
 example_texts = [
@@ -673,12 +813,36 @@ if selected_example != "Select an example...":
     user_input = selected_example
 
 if st.button('🔍 Analyze with CBT Framework', type="primary"):
-    if not user_input.strip():
-        st.warning("Please enter some text to analyze.")
+    # Prepare input text depending on mode
+    analysis_text = user_input
+    voice_label = None
+    raw_audio = None
+    audio_name = None
+    if input_mode == "Speak":
+        if audio_file is None:
+            st.warning("Please upload an audio file.")
+        else:
+            raw_audio = audio_file.getvalue() if hasattr(audio_file, 'getvalue') else audio_file.read()
+            audio_name = audio_file.name
+            with st.spinner("Transcribing (Whisper)…"):
+                text = transcribe_audio_locally(raw_audio, audio_name)
+            if not text:
+                st.error("Could not transcribe audio.")
+            else:
+                analysis_text = text
+                # Always get voice emotion for Speak mode
+                voice_label = detect_voice_emotion_from_bytes(raw_audio, audio_name)
+    
+    if not analysis_text or not analysis_text.strip():
+        st.warning("No text available for analysis.")
     else:
         with st.spinner("Performing CBT analysis..."):
-            # Run CBT analysis
-            cbt_result = cbt_engine.analyze(user_input)
+            cbt_result = cbt_engine.analyze(analysis_text)
+            # Override emotion with voice-based result when in Speak mode
+            if input_mode == "Speak" and voice_label:
+                cbt_result['emotion'] = voice_label.lower()
+                cbt_result['original_emotion'] = voice_label
+                cbt_result['emotion_source'] = 'voice'
         
         # Display results in organized sections
         col1, col2 = st.columns(2)
@@ -693,7 +857,8 @@ if st.button('🔍 Analyze with CBT Framework', type="primary"):
                 original_emotion = cbt_result.get('original_emotion', None)
                 
                 if original_emotion:
-                    st.write(f"**Detected Emotion:** {emotion} ({original_emotion})")
+                    source = cbt_result.get('emotion_source', 'text')
+                    st.write(f"**Detected Emotion:** {emotion} ({original_emotion}) • source: {source}")
                 else:
                     st.write("**Detected Emotion:**", emotion)
                     
@@ -791,6 +956,11 @@ if st.button('🔍 Analyze with CBT Framework', type="primary"):
             for note in notes:
                 st.write(f"• {note}")
         
+        # If Speak mode, show the transcription used
+        if input_mode == "Speak" and analysis_text:
+            st.subheader("📝 Transcription used for analysis")
+            st.write(analysis_text)
+
         # User-facing message
         st.subheader('💬 Supportive Response')
         user_message = cbt_result.get('user_facing', '')

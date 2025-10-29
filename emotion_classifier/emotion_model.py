@@ -54,7 +54,8 @@ def load_model(model_path='emotion_model.pth', vocab_file='vocab.txt'):
         # Load vocabulary
         vocab = load_vocab(vocab_file)
         if vocab is None:
-            return None, None
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            return None, None, device
 
         # Determine device
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -83,7 +84,11 @@ def load_model(model_path='emotion_model.pth', vocab_file='vocab.txt'):
 # Function to predict emotions from text
 def predict_emotion(text, model=None, vocab=None, device=None):
     if model is None or vocab is None:
-        model, vocab, device = load_model()
+        try:
+            model, vocab, device = load_model()
+        except ValueError as e:
+            print(f"Error unpacking load_model result: {e}")
+            return [{"label": "neutral", "score": 1.0}]
 
     if model is None or vocab is None:
         return [{"label": "neutral", "score": 1.0}]
