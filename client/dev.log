@@ -1,0 +1,106 @@
+
+> client@0.1.0 dev
+> next dev
+
+   ▲ Next.js 16.0.0 (Turbopack)
+   - Local:        http://localhost:3000
+   - Network:      http://192.168.46.31:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+ ✓ Ready in 621ms
+ GET /sign-in 200 in 2.2s (compile: 1945ms, proxy.ts: 71ms, render: 159ms)
+ POST /sign-in 200 in 27ms (compile: 3ms, proxy.ts: 15ms, render: 8ms)
+ GET /sign-in/SignIn_clerk_catchall_check_1761727452286 404 in 496ms (compile: 446ms, proxy.ts: 7ms, render: 43ms)
+Testing MongoDB connection...
+(node:72565) [MONGOOSE] Warning: Duplicate schema index on {"clerkId":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:72565) [MONGOOSE] Warning: Duplicate schema index on {"email":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+✅ MongoDB connected successfully
+📊 Total users in database: 0
+✅ Test user created successfully
+✅ Test user cleaned up
+ GET /api/test-db 200 in 379ms (compile: 311ms, proxy.ts: 11ms, render: 57ms)
+Error: NEXT_HTTP_ERROR_FALLBACK;404
+    at <unknown> (src/middleware.js:20:10)
+  18 |   // Protect dashboard and user API routes
+  19 |   if (isProtectedRoute(req)) {
+> 20 |     auth.protect();
+     |          ^
+  21 |   }
+  22 | });
+  23 | {
+  digest: 'NEXT_HTTP_ERROR_FALLBACK;404'
+}
+ ⨯ unhandledRejection: Error: NEXT_HTTP_ERROR_FALLBACK;404
+    at <unknown> (src/middleware.js:20:10)
+  18 |   // Protect dashboard and user API routes
+  19 |   if (isProtectedRoute(req)) {
+> 20 |     auth.protect();
+     |          ^
+  21 |   }
+  22 | });
+  23 | {
+  digest: 'NEXT_HTTP_ERROR_FALLBACK;404'
+}
+ ⨯ unhandledRejection:  Error: NEXT_HTTP_ERROR_FALLBACK;404
+    at <unknown> (src/middleware.js:20:10)
+  18 |   // Protect dashboard and user API routes
+  19 |   if (isProtectedRoute(req)) {
+> 20 |     auth.protect();
+     |          ^
+  21 |   }
+  22 | });
+  23 | {
+  digest: 'NEXT_HTTP_ERROR_FALLBACK;404'
+}
+ GET /api/users 401 in 378ms (compile: 360ms, proxy.ts: 11ms, render: 7ms)
+ GET /sign-in 200 in 218ms (compile: 92ms, proxy.ts: 69ms, render: 57ms)
+ GET /sign-in 200 in 30ms (compile: 5ms, proxy.ts: 8ms, render: 17ms)
+ GET /sign-in 200 in 27ms (compile: 3ms, proxy.ts: 7ms, render: 17ms)
+ GET /sign-in 200 in 22ms (compile: 3ms, proxy.ts: 5ms, render: 14ms)
+ GET /sign-in 200 in 23ms (compile: 3ms, proxy.ts: 7ms, render: 12ms)
+ GET /sign-in 200 in 25ms (compile: 3ms, proxy.ts: 9ms, render: 13ms)
+ GET /sign-in 200 in 27ms (compile: 3ms, proxy.ts: 9ms, render: 15ms)
+ GET /sign-in 200 in 28ms (compile: 3ms, proxy.ts: 6ms, render: 19ms)
+ GET /sign-in 200 in 33ms (compile: 4ms, proxy.ts: 7ms, render: 22ms)
+ GET /sign-in 200 in 27ms (compile: 3ms, proxy.ts: 6ms, render: 17ms)
+ GET /sign-in 200 in 24ms (compile: 3ms, proxy.ts: 7ms, render: 13ms)
+ GET /sign-in 200 in 33ms (compile: 3ms, proxy.ts: 7ms, render: 24ms)
+ GET /sign-in 200 in 37ms (compile: 4ms, proxy.ts: 10ms, render: 23ms)
+ GET /sign-in 200 in 24ms (compile: 3ms, proxy.ts: 7ms, render: 14ms)
+ GET /sign-in 200 in 40ms (compile: 4ms, proxy.ts: 9ms, render: 27ms)
+ GET /sign-in 200 in 31ms (compile: 3ms, proxy.ts: 7ms, render: 21ms)
+ GET /sign-in 200 in 33ms (compile: 4ms, proxy.ts: 9ms, render: 20ms)
+ GET /sign-in 200 in 69ms (compile: 8ms, proxy.ts: 8ms, render: 53ms)
+ GET /sign-in 200 in 42ms (compile: 6ms, proxy.ts: 9ms, render: 27ms)
+ GET /sign-in 200 in 39ms (compile: 5ms, proxy.ts: 10ms, render: 24ms)
+ GET /sign-in 200 in 33ms (compile: 5ms, proxy.ts: 7ms, render: 21ms)
+ GET /sign-in 200 in 45ms (compile: 4ms, proxy.ts: 8ms, render: 33ms)
+ GET /sign-in 200 in 36ms (compile: 4ms, proxy.ts: 7ms, render: 24ms)
+ GET /sign-in 200 in 50ms (compile: 7ms, proxy.ts: 11ms, render: 32ms)
+ GET /sign-in 200 in 43ms (compile: 5ms, proxy.ts: 16ms, render: 22ms)
+ GET /sign-in 200 in 40ms (compile: 5ms, proxy.ts: 10ms, render: 25ms)
+ GET /sign-in 200 in 47ms (compile: 7ms, proxy.ts: 13ms, render: 27ms)
+ GET /sign-in 200 in 46ms (compile: 5ms, proxy.ts: 10ms, render: 31ms)
+(node:72565) [MONGOOSE] Warning: Duplicate schema index on {"clerkId":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+(node:72565) [MONGOOSE] Warning: Duplicate schema index on {"email":1} found. This is often due to declaring an index using both "index: true" and "schema.index()". Please remove the duplicate index definition.
+Test webhook received: {
+  "test": "data"
+}
+✅ Test user created successfully: test@example.com
+ POST /api/test-webhook 200 in 140ms (compile: 123ms, proxy.ts: 7ms, render: 10ms)
+ GET /sign-in/sso-callback?after_sign_in_url=http%3A%2F%2Flocalhost%3A3000%2Fdashboard&after_sign_up_url=http%3A%2F%2Flocalhost%3A3000%2Fdashboard 404 in 139ms (compile: 34ms, proxy.ts: 10ms, render: 96ms)
+ POST /sign-in/sso-callback?after_sign_in_url=http%3A%2F%2Flocalhost%3A3000%2Fdashboard&after_sign_up_url=http%3A%2F%2Flocalhost%3A3000%2Fdashboard 404 in 18ms (compile: 4ms, proxy.ts: 7ms, render: 6ms)
+ GET /sign-in 200 in 49ms (compile: 2ms, proxy.ts: 6ms, render: 41ms)
+ POST /sign-in 200 in 17ms (compile: 3ms, proxy.ts: 7ms, render: 7ms)
+ GET /sign-in/SignIn_clerk_catchall_check_1761727634661 404 in 52ms (compile: 6ms, proxy.ts: 6ms, render: 40ms)
+ GET /sign-in 200 in 48ms (compile: 3ms, proxy.ts: 5ms, render: 40ms)
+ POST /sign-in 200 in 19ms (compile: 3ms, proxy.ts: 8ms, render: 8ms)
+ GET /sign-in/SignIn_clerk_catchall_check_1761727636239 404 in 45ms (compile: 4ms, proxy.ts: 7ms, render: 34ms)
+ GET /sign-up 200 in 333ms (compile: 311ms, proxy.ts: 8ms, render: 14ms)
+ GET /sign-up/SignUp_clerk_catchall_check_1761727653386 404 in 52ms (compile: 5ms, proxy.ts: 10ms, render: 38ms)
+ GET /dashboard 200 in 455ms (compile: 395ms, proxy.ts: 7ms, render: 53ms)
+ POST /dashboard 200 in 18ms (compile: 2ms, proxy.ts: 11ms, render: 5ms)
+ GET /api/users 401 in 57ms (compile: 34ms, proxy.ts: 11ms, render: 12ms)
