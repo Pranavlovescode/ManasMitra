@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { SignUp } from '@clerk/nextjs';
 import { useSearchParams } from 'next/navigation';
 import { Heart, Shield, Users, BookOpen, TrendingUp, Clock } from 'lucide-react';
 
-export default function SignUpPage() {
+// Component that uses useSearchParams wrapped in Suspense
+function SignUpContent() {
   const searchParams = useSearchParams();
   const [userRole, setUserRole] = useState('patient');
 
@@ -167,5 +168,26 @@ export default function SignUpPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Loading component for Suspense fallback
+function SignUpLoading() {
+  return (
+    <div className="min-h-screen bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">Loading sign up...</p>
+      </div>
+    </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function SignUpPage() {
+  return (
+    <Suspense fallback={<SignUpLoading />}>
+      <SignUpContent />
+    </Suspense>
   );
 }
