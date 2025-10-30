@@ -1,7 +1,7 @@
 import { auth, currentUser } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import User from '@/models/User';
+import connectDB from '../../../lib/mongodb';
+import User from '../../../models/User';
 
 // GET /api/users - Get current user profile
 export async function GET() {

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
-import { useUserProfile } from '@/hooks/useUserProfile';
+import { useUserProfile } from '../../hooks/useUserProfile';
 import { User, Heart, Stethoscope, Phone, MapPin, Save } from 'lucide-react';
 
 export default function ProfileCompletion() {
@@ -23,14 +23,12 @@ export default function ProfileCompletion() {
       zipCode: '',
       country: 'US'
     },
-    // Patient-specific fields
     dateOfBirth: '',
     emergencyContact: {
       name: '',
       phone: '',
       relationship: ''
     },
-    // Therapist-specific fields
     licenseNumber: '',
     specializations: [],
     yearsOfExperience: '',

@@ -3,7 +3,7 @@
 import { useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import QuestionnaireForm from '@/components/QuestionnaireForm';
-import { Card } from '@/components/ui/card';
+import { Card } from '../../components/ui/card';
 import { ChevronLeft } from 'lucide-react';
 
 export default function AssessmentPage() {
