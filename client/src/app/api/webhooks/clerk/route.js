@@ -15,7 +15,7 @@ export async function POST(req) {
   }
 
   // Get the headers
-  const headerPayload = headers();
+  const headerPayload = await headers();
   const svix_id = headerPayload.get('svix-id');
   const svix_timestamp = headerPayload.get('svix-timestamp');
   const svix_signature = headerPayload.get('svix-signature');
@@ -78,7 +78,7 @@ export async function POST(req) {
   // Handle the webhook
   const eventType = evt.type;
   console.log('🎯 [WEBHOOK] Event type:', eventType);
-  console.log('📊 [WEBHOOK] Event data keys:', Object.keys(evt.data || {}));
+  // console.log('📊 [WEBHOOK] Event data keys:', Object.keys(evt.data || {}));
   
   if (evt.data?.id) {
     console.log('👤 [WEBHOOK] User ID:', evt.data.id);

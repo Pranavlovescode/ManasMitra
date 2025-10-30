@@ -2,8 +2,10 @@ import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 
 const isProtectedRoute = createRouteMatcher([
   '/dashboard(.*)',
+  '/patient-details(.*)',
   '/api/users(.*)',
   '/api/therapists(.*)',
+  '/api/patients(.*)',
 ]);
 
 const isPublicApiRoute = createRouteMatcher([
@@ -13,11 +15,21 @@ const isPublicApiRoute = createRouteMatcher([
 
 export default clerkMiddleware((auth, req) => {
   // Skip auth for public API routes (webhooks, health checks)
-  if (isPublicApiRoute(req)) return;
+  if (isPublicApiRoute(req)) {
+    console.log('Skipping auth for public route:', req.url);
+    return;
+  }
   
   // Protect dashboard and user API routes
   if (isProtectedRoute(req)) {
-    auth.protect();
+    console.log('Protecting route:', req.url);
+    try {
+      auth.protect();
+      console.log('Auth protection successful for:', req.url);
+    } catch (error) {
+      console.error('Auth protection failed for:', req.url, error);
+      throw error;
+    }
   }
 });
 
