@@ -125,13 +125,15 @@ export default function Dashboard() {
                         <Heart className="h-6 w-6 text-green-600" />
                       </div>
                       <div className="ml-4">
-                        <h3 className="text-lg font-medium text-gray-900">Mood Check-in</h3>
-                        <p className="text-sm text-gray-500">Track how you're feeling today</p>
+                        <h3 className="text-lg font-medium text-gray-900">Mental Health Assessment</h3>
+                        <p className="text-sm text-gray-500">Complete GAD-7 and PHQ-9 questionnaires</p>
                       </div>
                     </div>
                     <div className="mt-4">
-                      <button className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors duration-200">
-                        Log Mood
+                      <button 
+                        onClick={() => router.push('/assessment')}
+                        className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors duration-200">
+                        Start Assessment
                       </button>
                     </div>
                   </div>
