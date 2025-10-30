@@ -1,40 +1,50 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
-import { Button } from "../../components/ui/button"
+import { useEffect, useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../ui_1/card";
+import { Button } from "../ui_1/button";
 
-export default function SessionManagement({ therapistId }: { therapistId: string }) {
-  const [sessions, setSessions] = useState<any[]>([])
-  const [showCreateSession, setShowCreateSession] = useState(false)
-  const [sessionType, setSessionType] = useState<"individual" | "group">("individual")
-  const [isLoading, setIsLoading] = useState(true)
+export default function SessionManagement({ therapistId }) {
+  // Type annotation removed
+  const [sessions, setSessions] = useState([]); // Type <any[]> removed
+  const [showCreateSession, setShowCreateSession] = useState(false);
+  const [sessionType, setSessionType] = useState(
+    // Type union removed
+    "individual"
+  );
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchSessions()
-  }, [therapistId])
+    fetchSessions();
+  }, [therapistId]);
 
   const fetchSessions = async () => {
     try {
-      const token = localStorage.getItem("token")
+      const token = localStorage.getItem("token");
       const res = await fetch(`/api/webrtc/rooms?therapistId=${therapistId}`, {
         headers: { Authorization: `Bearer ${token}` },
-      })
+      });
 
       if (res.ok) {
-        const data = await res.json()
-        setSessions(data)
+        const data = await res.json();
+        setSessions(data);
       }
     } catch (error) {
-      console.error("Failed to fetch sessions:", error)
+      console.error("Failed to fetch sessions:", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleCreateSession = async () => {
     try {
-      const token = localStorage.getItem("token")
+      const token = localStorage.getItem("token");
       const res = await fetch("/api/webrtc/create-room", {
         method: "POST",
         headers: {
@@ -45,23 +55,28 @@ export default function SessionManagement({ therapistId }: { therapistId: string
           therapistId,
           type: sessionType,
         }),
-      })
+      });
 
       if (res.ok) {
-        setShowCreateSession(false)
-        fetchSessions()
+        setShowCreateSession(false);
+        fetchSessions();
       }
     } catch (error) {
-      console.error("Failed to create session:", error)
+      console.error("Failed to create session:", error);
     }
-  }
+  };
 
-  const handleJoinSession = (roomId: string) => {
-    window.location.href = `/video-session/${roomId}`
-  }
+  const handleJoinSession = (roomId) => {
+    // Type :string removed
+    window.location.href = `/video-session/${roomId}`;
+  };
 
   if (isLoading) {
-    return <div className="text-center text-muted-foreground">Loading sessions...</div>
+    return (
+      <div className="text-center text-muted-foreground">
+        Loading sessions...
+      </div>
+    );
   }
 
   return (
@@ -70,10 +85,15 @@ export default function SessionManagement({ therapistId }: { therapistId: string
         <Card>
           <CardHeader>
             <CardTitle>Create New Session</CardTitle>
-            <CardDescription>Start a therapy session with your patients</CardDescription>
+            <CardDescription>
+              Start a therapy session with your patients
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => setShowCreateSession(true)} className="w-full">
+            <Button
+              onClick={() => setShowCreateSession(true)}
+              className="w-full"
+            >
               Create Session
             </Button>
           </CardContent>
@@ -92,7 +112,9 @@ export default function SessionManagement({ therapistId }: { therapistId: string
                     type="radio"
                     value="individual"
                     checked={sessionType === "individual"}
-                    onChange={(e) => setSessionType(e.target.value as "individual" | "group")}
+                    onChange={
+                      (e) => setSessionType(e.target.value) // 'as' assertion removed
+                    }
                   />
                   <span className="text-sm">Individual</span>
                 </label>
@@ -101,7 +123,9 @@ export default function SessionManagement({ therapistId }: { therapistId: string
                     type="radio"
                     value="group"
                     checked={sessionType === "group"}
-                    onChange={(e) => setSessionType(e.target.value as "individual" | "group")}
+                    onChange={
+                      (e) => setSessionType(e.target.value) // 'as' assertion removed
+                    }
                   />
                   <span className="text-sm">Group</span>
                 </label>
@@ -109,7 +133,11 @@ export default function SessionManagement({ therapistId }: { therapistId: string
             </div>
 
             <div className="flex gap-2">
-              <Button onClick={() => setShowCreateSession(false)} variant="outline" className="flex-1">
+              <Button
+                onClick={() => setShowCreateSession(false)}
+                variant="outline"
+                className="flex-1"
+              >
                 Cancel
               </Button>
               <Button onClick={handleCreateSession} className="flex-1">
@@ -128,14 +156,23 @@ export default function SessionManagement({ therapistId }: { therapistId: string
           <CardContent>
             <div className="space-y-3">
               {sessions.map((session) => (
-                <div key={session._id} className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                <div
+                  key={session._id}
+                  className="flex items-center justify-between p-4 bg-muted rounded-lg"
+                >
                   <div>
-                    <p className="font-semibold capitalize">{session.type} Session</p>
+                    <p className="font-semibold capitalize">
+                      {session.type} Session
+                    </p>
                     <p className="text-sm text-muted-foreground">
-                      Room ID: {session.roomId} • {session.patientIds.length} participant(s)
+                      Room ID: {session.roomId} • {session.patientIds.length}{" "}
+                      participant(s)
                     </p>
                   </div>
-                  <Button size="sm" onClick={() => handleJoinSession(session.roomId)}>
+                  <Button
+                    size="sm"
+                    onClick={() => handleJoinSession(session.roomId)}
+                  >
                     {session.active ? "Join" : "View"}
                   </Button>
                 </div>
@@ -145,5 +182,5 @@ export default function SessionManagement({ therapistId }: { therapistId: string
         </Card>
       )}
     </div>
-  )
+  );
 }

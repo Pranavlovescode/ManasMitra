@@ -1,8 +1,16 @@
-'use client';
+"use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Button } from "../../components/ui/button";
-import { Mic, MicOff, Video, VideoOff, Share2, MessageCircle, Phone } from "lucide-react";
+import { Button } from "../ui_1/button";
+import {
+  Mic,
+  MicOff,
+  Video,
+  VideoOff,
+  Share2,
+  MessageCircle,
+  Phone,
+} from "lucide-react";
 import ChatBox from "./chat-box";
 
 export default function VideoSessionRoom({ roomId, userId, userRole }) {
@@ -81,10 +89,14 @@ export default function VideoSessionRoom({ roomId, userId, userRole }) {
         <header className="border-b bg-white p-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Therapy Session</h1>
+              <h1 className="text-xl font-bold text-gray-900">
+                Therapy Session
+              </h1>
               <p className="text-sm text-gray-500">Room: {roomId}</p>
             </div>
-            <div className="text-sm text-gray-500">{sessionActive ? "Session Active" : "Session Ended"}</div>
+            <div className="text-sm text-gray-500">
+              {sessionActive ? "Session Active" : "Session Ended"}
+            </div>
           </div>
         </header>
 
@@ -92,7 +104,12 @@ export default function VideoSessionRoom({ roomId, userId, userRole }) {
         <div className="flex-1 flex gap-4 p-4 overflow-hidden">
           {/* Remote Video */}
           <div className="flex-1 bg-gray-900 rounded-lg overflow-hidden relative">
-            <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
+            <video
+              ref={remoteVideoRef}
+              autoPlay
+              playsInline
+              className="w-full h-full object-cover"
+            />
             <div className="absolute bottom-4 left-4 text-white text-sm bg-black/50 px-3 py-1 rounded">
               Remote Participant
             </div>
@@ -100,8 +117,16 @@ export default function VideoSessionRoom({ roomId, userId, userRole }) {
 
           {/* Local Video */}
           <div className="w-64 bg-gray-900 rounded-lg overflow-hidden relative">
-            <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
-            <div className="absolute bottom-4 left-4 text-white text-sm bg-black/50 px-3 py-1 rounded">You</div>
+            <video
+              ref={localVideoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute bottom-4 left-4 text-white text-sm bg-black/50 px-3 py-1 rounded">
+              You
+            </div>
           </div>
         </div>
 
@@ -114,7 +139,11 @@ export default function VideoSessionRoom({ roomId, userId, userRole }) {
               onClick={handleToggleMute}
               className="rounded-full w-14 h-14 p-0"
             >
-              {isMuted ? <MicOff className="w-6 h-6" /> : <Mic className="w-6 h-6" />}
+              {isMuted ? (
+                <MicOff className="w-6 h-6" />
+              ) : (
+                <Mic className="w-6 h-6" />
+              )}
             </Button>
 
             <Button
@@ -123,7 +152,11 @@ export default function VideoSessionRoom({ roomId, userId, userRole }) {
               onClick={handleToggleVideo}
               className="rounded-full w-14 h-14 p-0"
             >
-              {isVideoOn ? <Video className="w-6 h-6" /> : <VideoOff className="w-6 h-6" />}
+              {isVideoOn ? (
+                <Video className="w-6 h-6" />
+              ) : (
+                <VideoOff className="w-6 h-6" />
+              )}
             </Button>
 
             <Button
@@ -144,10 +177,10 @@ export default function VideoSessionRoom({ roomId, userId, userRole }) {
               <MessageCircle className="w-6 h-6" />
             </Button>
 
-            <Button 
-              size="lg" 
-              variant="destructive" 
-              onClick={handleEndCall} 
+            <Button
+              size="lg"
+              variant="destructive"
+              onClick={handleEndCall}
               className="rounded-full w-14 h-14 p-0"
             >
               <Phone className="w-6 h-6" />

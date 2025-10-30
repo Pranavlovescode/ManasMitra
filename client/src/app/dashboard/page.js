@@ -4,7 +4,7 @@ import { useUser, UserButton } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useUserProfile } from '../../hooks/useUserProfile';
-import ProfileCompletion from '../components/ProfileCompletion.jsx';
+import ProfileCompletion from '../testing/ProfileCompletion.jsx';
 import { Heart, Users, BookOpen, TrendingUp, Settings, LogOut, Video } from 'lucide-react';
 
 export default function Dashboard() {

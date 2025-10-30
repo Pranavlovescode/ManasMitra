@@ -1,5 +1,5 @@
 import { Geist, Geist_Mono } from "next/font/google";
-import { ClerkProvider } from '@clerk/nextjs';
+import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,7 +14,8 @@ const geistMono = Geist_Mono({
 
 export const metadata = {
   title: "ManasMitra - Mental Health Journaling",
-  description: "A comprehensive mental health journaling app for patients and therapists",
+  description:
+    "A comprehensive mental health journaling app for patients and therapists",
 };
 
 export default function RootLayout({ children }) {

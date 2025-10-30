@@ -1,0 +1,27 @@
+# FastAPI CBT Mental Health Analysis API Requirements
+
+# Core FastAPI dependencies
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+pydantic==2.5.0
+
+# AI/ML dependencies (from original requirements)
+torch>=1.11.0
+transformers>=4.21.0
+numpy>=1.21.0
+scikit-learn>=1.1.0
+
+# Audio processing (optional but recommended)
+librosa>=0.9.0
+soundfile>=0.12.0
+
+# Additional utilities
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+aiofiles==23.2.1
+
+# Development dependencies (optional)
+pytest==7.4.3
+pytest-asyncio==0.21.1
+httpx==0.25.2

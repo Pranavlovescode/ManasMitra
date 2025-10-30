@@ -1,7 +1,13 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card"
+import { useEffect, useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../ui_1/card";
 import {
   LineChart,
   Line,
@@ -16,40 +22,45 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from "recharts"
+} from "recharts";
 
-export default function AnalyticsDashboard({ patientId }: { patientId: string }) {
-  const [moodData, setMoodData] = useState<any[]>([])
-  const [assessmentData, setAssessmentData] = useState<any[]>([])
-  const [engagementData, setEngagementData] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+export default function AnalyticsDashboard({ patientId }) {
+  // Type annotation removed
+  const [moodData, setMoodData] = useState([]); // Type <any[]> removed
+  const [assessmentData, setAssessmentData] = useState([]); // Type <any[]> removed
+  const [engagementData, setEngagementData] = useState([]); // Type <any[]> removed
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    fetchAnalytics()
-  }, [patientId])
+    fetchAnalytics();
+  }, [patientId]);
 
   const fetchAnalytics = async () => {
     try {
-      const token = localStorage.getItem("token")
+      const token = localStorage.getItem("token");
       const res = await fetch(`/api/analytics/patient/${patientId}`, {
         headers: { Authorization: `Bearer ${token}` },
-      })
+      });
 
       if (res.ok) {
-        const data = await res.json()
-        setMoodData(data.moodTrends || [])
-        setAssessmentData(data.assessmentHistory || [])
-        setEngagementData(data.engagementMetrics || [])
+        const data = await res.json();
+        setMoodData(data.moodTrends || []);
+        setAssessmentData(data.assessmentHistory || []);
+        setEngagementData(data.engagementMetrics || []);
       }
     } catch (error) {
-      console.error("Failed to fetch analytics:", error)
+      console.error("Failed to fetch analytics:", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   if (isLoading) {
-    return <div className="text-center text-muted-foreground">Loading analytics...</div>
+    return (
+      <div className="text-center text-muted-foreground">
+        Loading analytics...
+      </div>
+    );
   }
 
   return (
@@ -61,13 +72,24 @@ export default function AnalyticsDashboard({ patientId }: { patientId: string })
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={moodData.length > 0 ? moodData : [{ date: "No data", intensity: 0 }]}>
+            <LineChart
+              data={
+                moodData.length > 0
+                  ? moodData
+                  : [{ date: "No data", intensity: 0 }]
+              }
+            >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
               <YAxis />
               <Tooltip />
               <Legend />
-              <Line type="monotone" dataKey="intensity" stroke="#8884d8" name="Mood Intensity" />
+              <Line
+                type="monotone"
+                dataKey="intensity"
+                stroke="#8884d8"
+                name="Mood Intensity"
+              />
             </LineChart>
           </ResponsiveContainer>
         </CardContent>
@@ -80,7 +102,13 @@ export default function AnalyticsDashboard({ patientId }: { patientId: string })
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={assessmentData.length > 0 ? assessmentData : [{ date: "No data", score: 0 }]}>
+            <BarChart
+              data={
+                assessmentData.length > 0
+                  ? assessmentData
+                  : [{ date: "No data", score: 0 }]
+              }
+            >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
               <YAxis />
@@ -101,7 +129,11 @@ export default function AnalyticsDashboard({ patientId }: { patientId: string })
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
-                data={engagementData.length > 0 ? engagementData : [{ name: "No data", value: 1 }]}
+                data={
+                  engagementData.length > 0
+                    ? engagementData
+                    : [{ name: "No data", value: 1 }]
+                }
                 cx="50%"
                 cy="50%"
                 labelLine={false}
@@ -111,7 +143,12 @@ export default function AnalyticsDashboard({ patientId }: { patientId: string })
                 dataKey="value"
               >
                 {engagementData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={["#8884d8", "#82ca9d", "#ffc658", "#ff7c7c"][index % 4]} />
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={
+                      ["#8884d8", "#82ca9d", "#ffc658", "#ff7c7c"][index % 4]
+                    }
+                  />
                 ))}
               </Pie>
               <Tooltip />
@@ -120,5 +157,5 @@ export default function AnalyticsDashboard({ patientId }: { patientId: string })
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

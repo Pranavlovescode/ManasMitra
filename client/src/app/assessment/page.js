@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { useAuth } from '@clerk/nextjs';
-import { useRouter } from 'next/navigation';
-import QuestionnaireForm from '@/components/QuestionnaireForm';
-import { Card } from '../../components/ui/card';
-import { ChevronLeft } from 'lucide-react';
+import { useAuth } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import QuestionnaireForm from "@/components/QuestionnaireForm";
+import { Card } from "../../components/ui_1/card";
+import { ChevronLeft } from "lucide-react";
 
 export default function AssessmentPage() {
   const { userId } = useAuth();
@@ -12,22 +12,22 @@ export default function AssessmentPage() {
 
   const handleSubmit = async (assessment) => {
     try {
-      const response = await fetch('/api/assessments', {
-        method: 'POST',
+      const response = await fetch("/api/assessments", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(assessment),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to submit assessment');
+        throw new Error("Failed to submit assessment");
       }
 
       // Show success message or redirect
-      router.push('/dashboard');
+      router.push("/dashboard");
     } catch (error) {
-      console.error('Error submitting assessment:', error);
+      console.error("Error submitting assessment:", error);
     }
   };
 
@@ -39,7 +39,7 @@ export default function AssessmentPage() {
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center">
               <button
-                onClick={() => router.push('/dashboard')}
+                onClick={() => router.push("/dashboard")}
                 className="mr-4 p-2 text-gray-500 hover:text-gray-700 rounded-full hover:bg-gray-100"
               >
                 <ChevronLeft className="h-5 w-5" />
@@ -57,10 +57,12 @@ export default function AssessmentPage() {
         <div className="px-4 py-6 sm:px-0">
           <Card className="bg-white p-6 mb-6 shadow-sm">
             <p className="text-gray-700 mb-4 text-lg">
-              Over the last 2 weeks, how often have you been bothered by any of the following problems?
+              Over the last 2 weeks, how often have you been bothered by any of
+              the following problems?
             </p>
             <p className="text-sm text-gray-500">
-              Please answer all questions honestly. Your responses will help us better understand your current state of mental health.
+              Please answer all questions honestly. Your responses will help us
+              better understand your current state of mental health.
             </p>
           </Card>
           <QuestionnaireForm onSubmit={handleSubmit} />
