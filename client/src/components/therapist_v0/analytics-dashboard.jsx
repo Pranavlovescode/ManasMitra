@@ -7,7 +7,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../ui_1/card";
+} from "../ui/card";
 import {
   LineChart,
   Line,

@@ -3,7 +3,7 @@
 import { useUser, UserButton } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { useUserProfile } from '../../hooks/useUserProfile';
+import { useUserProfile } from '../../hooks/useUserProfile.js';
 import ProfileCompletion from '../testing/ProfileCompletion.jsx';
 import { Heart, Users, BookOpen, TrendingUp, Settings, LogOut, Video } from 'lucide-react';
 

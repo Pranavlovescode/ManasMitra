@@ -7,9 +7,9 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../ui_1/card";
-import { Button } from "../ui_1/button";
-import { Textarea } from "../ui_1/textarea";
+} from "../ui/card";
+import { Button } from "../ui/button";
+import { Textarea } from "../ui/textarea";
 
 export default function PatientDetails({ patientId, therapistId }) {
   // Type annotation removed

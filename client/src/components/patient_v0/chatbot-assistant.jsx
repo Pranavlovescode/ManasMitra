@@ -1,15 +1,15 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Button } from "../ui_1/button";
+import { Button } from "../ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../ui_1/card";
-import { Input } from "../ui_1/input";
+} from "../ui/card";
+import { Input } from "../ui/input";
 
 export default function ChatbotAssistant({ userId }) {
   // Type annotation removed

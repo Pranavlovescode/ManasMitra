@@ -7,8 +7,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui_1/card";
-import { Button } from "@/components/ui_1/button";
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export default function ComplianceReports() {
   const [reports, setReports] = useState([]);

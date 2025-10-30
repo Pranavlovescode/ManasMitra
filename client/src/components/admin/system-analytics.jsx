@@ -7,7 +7,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui_1/card";
+} from "@/components/ui/card";
 import {
   BarChart,
   Bar,

@@ -7,9 +7,9 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../ui_1/card";
-import { Button } from "../ui_1/button";
-import { Input } from "../ui_1/input";
+} from "../ui/card";
+import { Button } from "../ui/button";
+import { Input } from "../ui/input";
 
 export default function PatientList({ therapistId, onSelectPatient }) {
   // Type annotation removed

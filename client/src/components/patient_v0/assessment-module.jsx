@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "../ui_1/button";
+import { Button } from "../ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../ui_1/card";
+} from "../ui/card";
 
 const PHQ9_QUESTIONS = [
   "Little interest or pleasure in doing things",

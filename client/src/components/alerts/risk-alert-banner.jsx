@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AlertTriangle, X } from "lucide-react";
-import { Button } from "@/components/ui_1/button";
+import { Button } from "@/components/ui/button";
 
 export default function RiskAlertBanner() {
   const [alerts, setAlerts] = useState([]); // Type annotation removed

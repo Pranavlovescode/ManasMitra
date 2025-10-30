@@ -1,16 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "../ui_1/button";
+import { Button } from "../ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../ui_1/card";
-import { Input } from "../ui_1/input";
-import { Textarea } from "../ui_1/textarea";
+} from "../ui/card";
+import { Input } from "../ui/input";
+import { Textarea } from "../ui/textarea";
 
 const CBT_PROMPTS = [
   "What thoughts are you having right now?",

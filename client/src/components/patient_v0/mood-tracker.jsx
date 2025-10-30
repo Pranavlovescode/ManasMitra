@@ -1,15 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Button } from "../ui_1/button";
+import { Button } from "../ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../ui_1/card";
-import { Textarea } from "../ui_1/textarea";
+} from "../ui/card";
+import { Textarea } from "../ui/textarea";
 
 const MOODS = [
   { emoji: "😢", label: "Sad", value: "sad" },

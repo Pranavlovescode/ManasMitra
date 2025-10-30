@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Bell, X } from "lucide-react";
-import { Button } from "@/components/ui_1/button";
-import { Card } from "@/components/ui_1/card";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 export default function NotificationCenter() {
   const [notifications, setNotifications] = useState([]); // Type annotation removed

@@ -12,43 +12,43 @@ import ComplianceReports from "@/components/admin/compliance-reports";
 export default function AdminDashboard() {
   const router = useRouter();
   const [user, setUser] = useState();
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        router.push("/auth/login?role=admin");
-        return;
-      }
+  // useEffect(() => {
+  //   const checkAuth = async () => {
+  //     const token = localStorage.getItem("token");
+  //     if (!token) {
+  //       router.push("/auth/login?role=admin");
+  //       return;
+  //     }
 
-      try {
-        const res = await fetch("/api/auth/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+  //     try {
+  //       const res = await fetch("/api/auth/me", {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //       });
 
-        if (!res.ok) {
-          localStorage.removeItem("token");
-          router.push("/auth/login?role=admin");
-          return;
-        }
+  //       if (!res.ok) {
+  //         localStorage.removeItem("token");
+  //         router.push("/auth/login?role=admin");
+  //         return;
+  //       }
 
-        const data = await res.json();
-        if (data.role !== "admin") {
-          router.push("/");
-          return;
-        }
+  //       const data = await res.json();
+  //       if (data.role !== "admin") {
+  //         router.push("/");
+  //         return;
+  //       }
 
-        setUser(data);
-      } catch (error) {
-        router.push("/auth/login?role=admin");
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  //       setUser(data);
+  //     } catch (error) {
+  //       router.push("/auth/login?role=admin");
+  //     } finally {
+  //       setIsLoading(false);
+  //     }
+  //   };
 
-    checkAuth();
-  }, [router]);
+  //   checkAuth();
+  // }, [router]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
@@ -66,9 +66,9 @@ export default function AdminDashboard() {
     );
   }
 
-  if (!user) {
-    return null;
-  }
+  // if (!user) {
+  //   return null;
+  // }
 
   return (
     <div className="min-h-screen bg-background">

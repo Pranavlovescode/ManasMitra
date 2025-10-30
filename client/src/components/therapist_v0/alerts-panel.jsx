@@ -7,8 +7,8 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../ui_1/card";
-import { Button } from "../ui_1/button";
+} from "../ui/card";
+import { Button } from "../ui/button";
 
 export default function AlertsPanel({ therapistId }) {
   // Type annotation removed
