@@ -3,29 +3,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
-import { useUserProfile } from '@/hooks/useUserProfile';
+import { useUserProfile } from '../../hooks/useUserProfile';
 import { User, Heart, Stethoscope, Phone, MapPin, Save } from 'lucide-react';
 
 export default function ProfileCompletion() {
   const { user } = useUser();
   const { dbUser, loading: profileLoading } = useUserProfile();
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
-  const userRole = user?.unsafeMetadata?.role || 'patient';
-  
-  // For patients, redirect to patient-details page for comprehensive profile completion
-  if (userRole === 'patient') {
-    router.push('/patient-details');
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Redirecting to complete your profile...</p>
-        </div>
-      </div>
-    );
-  }
-  
   const [formData, setFormData] = useState({
     firstName: user?.firstName || '',
     lastName: user?.lastName || '',
@@ -39,20 +23,20 @@ export default function ProfileCompletion() {
       zipCode: '',
       country: 'US'
     },
-    // Patient-specific fields
     dateOfBirth: '',
     emergencyContact: {
       name: '',
       phone: '',
       relationship: ''
     },
-    // Therapist-specific fields
     licenseNumber: '',
     specializations: [],
     yearsOfExperience: '',
     education: []
   });
   const [error, setError] = useState('');
+  const router = useRouter();
+  const userRole = user?.unsafeMetadata?.role || 'patient';
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

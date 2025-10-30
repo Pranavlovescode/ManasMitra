@@ -3,9 +3,9 @@
 import { useUser, UserButton } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { useUserProfile } from '@/hooks/useUserData';
-import ProfileCompletion from '@/components/ProfileCompletion';
-import { Heart, Users, BookOpen, TrendingUp, Settings, LogOut } from 'lucide-react';
+import { useUserProfile } from '../../hooks/useUserProfile';
+import ProfileCompletion from '../components/ProfileCompletion.jsx';
+import { Heart, Users, BookOpen, TrendingUp, Settings, LogOut, Video } from 'lucide-react';
 
 export default function Dashboard() {
   const { user, isLoaded } = useUser();
@@ -125,13 +125,15 @@ export default function Dashboard() {
                         <Heart className="h-6 w-6 text-green-600" />
                       </div>
                       <div className="ml-4">
-                        <h3 className="text-lg font-medium text-gray-900">Mood Check-in</h3>
-                        <p className="text-sm text-gray-500">Track how you're feeling today</p>
+                        <h3 className="text-lg font-medium text-gray-900">Mental Health Assessment</h3>
+                        <p className="text-sm text-gray-500">Complete GAD-7 and PHQ-9 questionnaires</p>
                       </div>
                     </div>
                     <div className="mt-4">
-                      <button className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors duration-200">
-                        Log Mood
+                      <button 
+                        onClick={() => router.push('/assessment')}
+                        className="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors duration-200">
+                        Start Assessment
                       </button>
                     </div>
                   </div>
@@ -141,16 +143,19 @@ export default function Dashboard() {
                   <div className="p-6">
                     <div className="flex items-center">
                       <div className="shrink-0">
-                        <TrendingUp className="h-6 w-6 text-purple-600" />
+                        <Video className="h-6 w-6 text-purple-600" />
                       </div>
                       <div className="ml-4">
-                        <h3 className="text-lg font-medium text-gray-900">Progress Report</h3>
-                        <p className="text-sm text-gray-500">View your mental health trends</p>
+                        <h3 className="text-lg font-medium text-gray-900">Video Session</h3>
+                        <p className="text-sm text-gray-500">Join your therapy session</p>
                       </div>
                     </div>
                     <div className="mt-4">
-                      <button className="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition-colors duration-200">
-                        View Progress
+                      <button 
+                        onClick={() => router.push('/video-session')}
+                        className="w-full bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 transition-colors duration-200"
+                      >
+                        Join Session
                       </button>
                     </div>
                   </div>
