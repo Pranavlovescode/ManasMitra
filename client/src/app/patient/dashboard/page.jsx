@@ -5,18 +5,28 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui_1/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import MoodTracker from "@/components/patient_v0/mood-tracker";
 import JournalModule from "@/components/patient_v0/journal-module";
 import ChatbotAssistant from "@/components/patient_v0/chatbot-assistant";
-import AssessmentModule from "@/components/patient_v0/assessment-module";
+import MultiAssessmentModule from "@/components/patient_v0/multi-assessment-module";
 import AppointmentBooking from "@/components/patient_v0/appointment-booking";
+import MoodTrackerModal from "@/components/patient_v0/mood-tracker-modal";
 import { useUser } from "@clerk/nextjs";
+import { useDailyMoodTracker } from "@/hooks/useDailyMoodTracker";
 
 export default function PatientDashboard() {
   const router = useRouter();
-  // const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const user = useUser();
+  const { user, isLoaded } = useUser();
+  
+  // Daily mood tracker integration
+  const {
+    showMoodModal,
+    hasMoodToday,
+    handleMoodSubmitted,
+    handleModalClose,
+    getTodayMood,
+    showMoodModalManually
+  } = useDailyMoodTracker(user?.id);
 
   // useEffect(() => {
   //   const checkAuth = async () => {
@@ -59,12 +69,25 @@ export default function PatientDashboard() {
     router.push("/");
   };
 
-  if (isLoading) {
+  if (isLoading || !isLoaded) {
     return (
       <div className="min-h-screen bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mx-auto mb-6"></div>
           <p className="text-gray-600 text-lg">Loading your dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 text-lg">User not found. Please sign in again.</p>
+          <Button onClick={() => router.push('/sign-in')} className="mt-4">
+            Sign In
+          </Button>
         </div>
       </div>
     );
@@ -88,21 +111,32 @@ export default function PatientDashboard() {
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-800">
-                  Welcome back, <span className="text-indigo-600">{user.firstName}</span> 👋
+                  Welcome back, <span className="text-indigo-600">{user?.firstName || 'User'}</span> 👋
                 </h1>
                 <p className="text-gray-600 mt-1">Continue your mental health journey with us</p>
               </div>
             </div>
-            <Button 
-              variant="outline" 
-              onClick={handleLogout}
-              className="bg-white/80 hover:bg-white border-gray-200 hover:border-gray-300 shadow-sm"
-            >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              Logout
-            </Button>
+            <div className="flex items-center gap-3">
+              {!hasMoodToday && (
+                <Button
+                  onClick={showMoodModalManually}
+                  className="bg-linear-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white shadow-lg"
+                >
+                  <span className="mr-2">😊</span>
+                  Log Mood
+                </Button>
+              )}
+              <Button 
+                variant="outline" 
+                onClick={handleLogout}
+                className="bg-white/80 hover:bg-white border-gray-200 hover:border-gray-300 shadow-sm"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -110,12 +144,40 @@ export default function PatientDashboard() {
       {/* Quick Stats */}
       <div className="container mx-auto px-6 py-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-lg hover:shadow-xl transition-all duration-300">
+          <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer" onClick={showMoodModalManually}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Today's Mood</p>
-                  <p className="text-2xl font-bold text-gray-800">😊 Happy</p>
+                  {(() => {
+                    const todayMood = getTodayMood();
+                    const moodEmojis = {
+                      sad: "😢",
+                      neutral: "😐", 
+                      happy: "🙂",
+                      excited: "😄",
+                      loved: "😍"
+                    };
+                    const moodLabels = {
+                      sad: "Sad",
+                      neutral: "Neutral",
+                      happy: "Happy", 
+                      excited: "Excited",
+                      loved: "Loved"
+                    };
+                    
+                    if (todayMood) {
+                      return (
+                        <p className="text-2xl font-bold text-gray-800">
+                          {moodEmojis[todayMood.mood]} {moodLabels[todayMood.mood]}
+                        </p>
+                      );
+                    } else if (hasMoodToday) {
+                      return <p className="text-lg font-bold text-gray-800">😊 Logged</p>;
+                    } else {
+                      return <p className="text-lg font-bold text-gray-500">Not logged yet</p>;
+                    }
+                  })()}
                 </div>
                 <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
                   <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -123,6 +185,9 @@ export default function PatientDashboard() {
                   </svg>
                 </div>
               </div>
+              {!hasMoodToday && (
+                <p className="text-xs text-gray-500 mt-2">Click to log your mood</p>
+              )}
             </CardContent>
           </Card>
 
@@ -178,18 +243,9 @@ export default function PatientDashboard() {
         {/* Main Content */}
         <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl">
           <CardContent className="p-8">
-            <Tabs defaultValue="mood" className="space-y-6">
+            <Tabs defaultValue="journal" className="space-y-6">
               <div className="flex justify-center">
-                <TabsList className="grid grid-cols-5 bg-gray-100/80 p-1 rounded-xl shadow-inner">
-                  <TabsTrigger 
-                    value="mood" 
-                    className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg transition-all duration-200"
-                  >
-                    <span className="flex items-center gap-2">
-                      <span className="text-lg">😊</span>
-                      <span className="hidden sm:inline">Mood</span>
-                    </span>
-                  </TabsTrigger>
+                <TabsList className="grid grid-cols-4 bg-gray-100/80 p-1 rounded-xl shadow-inner">
                   <TabsTrigger 
                     value="journal"
                     className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg transition-all duration-200"  
@@ -229,29 +285,33 @@ export default function PatientDashboard() {
                 </TabsList>
               </div>
 
-              <TabsContent value="mood" className="space-y-4 mt-8">
-                <MoodTracker userId={user.id} />
-              </TabsContent>
-
               <TabsContent value="journal" className="space-y-4 mt-8">
-                <JournalModule userId={user.id} />
+                <JournalModule userId={user?.id} />
               </TabsContent>
 
               <TabsContent value="chatbot" className="space-y-4 mt-8">
-                <ChatbotAssistant userId={user.id} />
+                <ChatbotAssistant userId={user?.id} />
               </TabsContent>
 
               <TabsContent value="assessment" className="space-y-4 mt-8">
-                <AssessmentModule userId={user.id} />
+                <MultiAssessmentModule userId={user?.id} />
               </TabsContent>
 
               <TabsContent value="appointments" className="space-y-4 mt-8">
-                <AppointmentBooking userId={user.id} />
+                <AppointmentBooking userId={user?.id} />
               </TabsContent>
             </Tabs>
           </CardContent>
         </Card>
       </div>
+
+      {/* Mood Tracker Modal */}
+      <MoodTrackerModal 
+        isOpen={showMoodModal}
+        onClose={handleModalClose}
+        userId={user?.id}
+        onMoodSubmitted={handleMoodSubmitted}
+      />
     </div>
   );
 }

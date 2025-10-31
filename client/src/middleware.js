@@ -1,7 +1,11 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+import { NextResponse } from 'next/server';
 
 const isProtectedRoute = createRouteMatcher([
   '/dashboard(.*)',
+  '/patient(.*)',
+  '/therapist(.*)',
+  '/admin(.*)',
   '/patient-details(.*)',
   '/api/users(.*)',
   '/api/therapists(.*)',
@@ -12,6 +16,10 @@ const isPublicApiRoute = createRouteMatcher([
   '/api/webhooks(.*)',
   '/api/health',
 ]);
+
+const isPatientRoute = createRouteMatcher(['/patient(.*)']);
+const isTherapistRoute = createRouteMatcher(['/therapist(.*)']);
+const isAdminRoute = createRouteMatcher(['/admin(.*)']);
 
 export default clerkMiddleware((auth, req) => {
   // Skip auth for public API routes (webhooks, health checks)
@@ -24,7 +32,24 @@ export default clerkMiddleware((auth, req) => {
   if (isProtectedRoute(req)) {
     console.log('Protecting route:', req.url);
     try {
-      auth.protect();
+      const { userId, sessionClaims } = auth.protect();
+      
+      // Role-based access control
+      const userRole = sessionClaims?.metadata?.role || sessionClaims?.publicMetadata?.role;
+      
+      // Check if user is trying to access wrong dashboard
+      if (isPatientRoute(req) && userRole && userRole !== 'patient') {
+        return NextResponse.redirect(new URL(`/${userRole}/dashboard`, req.url));
+      }
+      
+      if (isTherapistRoute(req) && userRole && userRole !== 'therapist') {
+        return NextResponse.redirect(new URL(`/${userRole === 'admin' ? 'admin' : 'patient'}/dashboard`, req.url));
+      }
+      
+      if (isAdminRoute(req) && userRole && userRole !== 'admin') {
+        return NextResponse.redirect(new URL(`/${userRole}/dashboard`, req.url));
+      }
+      
       console.log('Auth protection successful for:', req.url);
     } catch (error) {
       console.error('Auth protection failed for:', req.url, error);

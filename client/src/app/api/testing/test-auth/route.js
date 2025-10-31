@@ -1,4 +1,4 @@
-import { getAuth } from '@clerk/nextjs/server';
+import { getAuth, currentUser } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 
 // GET /api/test-auth - Test authentication

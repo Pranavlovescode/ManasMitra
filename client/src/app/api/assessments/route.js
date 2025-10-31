@@ -10,7 +10,7 @@ export async function POST(req) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const { gad7, phq9 } = await req.json();
+    const assessmentData = await req.json();
     
     try {
       await connectDB();
@@ -22,11 +22,22 @@ export async function POST(req) {
       );
     }
 
-    const assessment = new Assessment({
-      userId,
-      gad7,
-      phq9,
-    });
+    // Handle both old format (gad7, phq9) and new format (multiple assessments)
+    let assessment;
+    if (assessmentData.gad7 || assessmentData.phq9) {
+      // Old format - backward compatibility
+      assessment = new Assessment({
+        userId,
+        gad7: assessmentData.gad7,
+        phq9: assessmentData.phq9,
+      });
+    } else {
+      // New format - multiple assessment types
+      assessment = new Assessment({
+        userId,
+        ...assessmentData
+      });
+    }
 
     try {
       await assessment.save();

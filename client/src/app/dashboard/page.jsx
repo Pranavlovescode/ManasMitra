@@ -12,6 +12,13 @@ export default function Dashboard() {
   const { dbUser, loading, isProfileComplete } = useUserProfile();
   const router = useRouter();
 
+  useEffect(() => {
+    if (isLoaded && !loading) {
+      // Always redirect to role-based redirect page
+      router.push('/dashboard/redirect');
+    }
+  }, [isLoaded, loading, router]);
+
   if (!isLoaded || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -20,12 +27,15 @@ export default function Dashboard() {
     );
   }
 
-  // Show profile completion if user exists but profile is not complete
-  if (dbUser && !isProfileComplete) {
-    return <ProfileCompletion />;
-  }
-
-  const userRole = user?.unsafeMetadata?.role || dbUser?.role || 'patient';
+  // This should not be reached as we're redirecting
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">Redirecting...</p>
+      </div>
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">

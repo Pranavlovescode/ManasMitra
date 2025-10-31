@@ -9,6 +9,7 @@ const assessmentSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+  // Original assessments (backward compatibility)
   gad7: {
     score: Number,
     severity: String,
@@ -18,6 +19,23 @@ const assessmentSchema = new mongoose.Schema({
     }]
   },
   phq9: {
+    score: Number,
+    severity: String,
+    answers: [{
+      questionId: Number,
+      answer: Number
+    }]
+  },
+  // New assessment types
+  stress: {
+    score: Number,
+    severity: String,
+    answers: [{
+      questionId: Number,
+      answer: Number
+    }]
+  },
+  sleep: {
     score: Number,
     severity: String,
     answers: [{
