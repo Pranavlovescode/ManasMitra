@@ -11,12 +11,17 @@ export function useUserProfile() {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (!isLoaded || !user) {
+      if (!isLoaded) {
+        return;
+      }
+
+      if (!user) {
         setLoading(false);
         return;
       }
 
       try {
+        setLoading(true);
         const response = await fetch('/api/users', {
           method: 'GET',
           headers: {
@@ -24,18 +29,19 @@ export function useUserProfile() {
           },
         });
 
-        if (response.ok) {
-          const userData = await response.json();
-          setDbUser(userData);
-        } else if (response.status === 404) {
-          // User not found in database yet
-          setDbUser(null);
-        } else {
-          throw new Error('Failed to fetch user profile');
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('Profile fetch error:', response.status, errorData);
+          throw new Error(errorData.error || 'Failed to fetch user profile');
         }
+
+        const userData = await response.json();
+        setDbUser(userData);
+        setError(null); // Clear any previous errors
       } catch (err) {
         console.error('Error fetching user profile:', err);
         setError(err.message);
+        setDbUser(null);
       } finally {
         setLoading(false);
       }

@@ -24,26 +24,28 @@ export default function PatientList({ therapistId, onSelectPatient }) {
 
   useEffect(() => {
     const filtered = patients.filter(
-      (p) =>
-        p.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.email.toLowerCase().includes(searchTerm.toLowerCase())
+      (p) => {
+        const firstName = p.userId?.firstName || '';
+        const lastName = p.userId?.lastName || '';
+        const email = p.userId?.email || '';
+        const searchLower = searchTerm.toLowerCase();
+        
+        return firstName.toLowerCase().includes(searchLower) ||
+               lastName.toLowerCase().includes(searchLower) ||
+               email.toLowerCase().includes(searchLower);
+      }
     );
     setFilteredPatients(filtered);
   }, [searchTerm, patients]);
 
   const fetchPatients = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(
-        `/api/therapist/patients?therapistId=${therapistId}`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const res = await fetch('/api/therapists/patients');
+      
       if (res.ok) {
         const data = await res.json();
-        setPatients(data);
+        // Extract just the assigned patients or all patients
+        setPatients(data.assignedPatients || data.allPatients || []);
       }
     } catch (error) {
       console.error("Failed to fetch patients:", error);
@@ -83,10 +85,10 @@ export default function PatientList({ therapistId, onSelectPatient }) {
               >
                 <div>
                   <p className="font-semibold">
-                    {patient.firstName} {patient.lastName}
+                    {patient.userId?.firstName} {patient.userId?.lastName}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {patient.email}
+                    {patient.userId?.email}
                   </p>
                 </div>
                 <Button size="sm" onClick={() => onSelectPatient(patient._id)}>

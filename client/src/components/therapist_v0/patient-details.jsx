@@ -27,25 +27,18 @@ export default function PatientDetails({ patientId, therapistId }) {
 
   const fetchPatientData = async () => {
     try {
-      const token = localStorage.getItem("token");
-
       const [patientRes, journalsRes, moodsRes, assessmentsRes] =
         await Promise.all([
-          fetch(`/api/therapist/patient/${patientId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch(`/api/journal?userId=${patientId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch(`/api/mood?userId=${patientId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch(`/api/assessment?userId=${patientId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
+          fetch(`/api/therapists/patient/${patientId}`),
+          fetch(`/api/journal?userId=${patientId}`),
+          fetch(`/api/mood?userId=${patientId}`),
+          fetch(`/api/assessment?userId=${patientId}`),
         ]);
 
-      if (patientRes.ok) setPatient(await patientRes.json());
+      if (patientRes.ok) {
+        const data = await patientRes.json();
+        setPatient(data);
+      }
       if (journalsRes.ok) setJournals(await journalsRes.json());
       if (moodsRes.ok) setMoods(await moodsRes.json());
       if (assessmentsRes.ok) setAssessments(await assessmentsRes.json());
@@ -59,12 +52,10 @@ export default function PatientDetails({ patientId, therapistId }) {
   const handleSaveNotes = async () => {
     setIsSaving(true);
     try {
-      const token = localStorage.getItem("token");
       await fetch(`/api/therapist/notes/${patientId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ notes: clinicalNotes }),
       });
@@ -94,9 +85,9 @@ export default function PatientDetails({ patientId, therapistId }) {
       <Card>
         <CardHeader>
           <CardTitle>
-            {patient.firstName} {patient.lastName}
+            {patient.userId?.firstName} {patient.userId?.lastName}
           </CardTitle>
-          <CardDescription>{patient.email}</CardDescription>
+          <CardDescription>{patient.userId?.email}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid md:grid-cols-3 gap-4">
