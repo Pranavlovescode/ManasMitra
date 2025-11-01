@@ -119,6 +119,22 @@ class ErrorResponse(BaseModel):
     detail: Optional[str] = None
     timestamp: datetime
 
+class JournalAnalysisRequest(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200, description="Journal entry title")
+    content: str = Field(..., min_length=1, max_length=10000, description="Journal entry content")
+    mood: Optional[str] = Field(None, description="Self-reported mood")
+    prompt: Optional[str] = Field(None, description="Writing prompt used")
+
+class JournalAnalysisResponse(BaseModel):
+    content_analysis: CBTAnalysisResponse
+    title_analysis: Optional[CBTAnalysisResponse] = None
+    overall_sentiment: str
+    key_themes: List[str] = []
+    therapeutic_insights: List[str] = []
+    progress_indicators: List[str] = []
+    recommendations: List[str] = []
+    analysis_timestamp: datetime
+
 # Dependency to get CBT engine
 def get_cbt_engine():
     try:
@@ -196,6 +212,12 @@ async def root():
             <span class="method post">POST</span>
             <strong>/analyze/distortions</strong>
             <p>Cognitive distortion detection from text input</p>
+        </div>
+        
+        <div class="endpoint">
+            <span class="method post">POST</span>
+            <strong>/analyze/journal</strong>
+            <p>Comprehensive journal analysis with therapeutic insights and recommendations</p>
         </div>
         
         <div class="endpoint">
@@ -593,6 +615,245 @@ async def analyze_audio_complete(file: UploadFile = File(...), cbt_engine = Depe
         logger.error(f"Complete audio analysis failed: {e}")
         logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Audio analysis failed: {str(e)}")
+
+# Journal Analysis Endpoint
+@app.post("/analyze/journal", response_model=JournalAnalysisResponse)
+async def analyze_journal(request: JournalAnalysisRequest, cbt_engine = Depends(get_cbt_engine)):
+    """
+    Comprehensive journal analysis for therapeutic insights
+    """
+    try:
+        # Analyze the main content
+        content_result = cbt_engine.analyze(request.content)
+        
+        # Analyze title if substantial enough
+        title_result = None
+        if len(request.title.split()) > 3:  # Only analyze titles with more than 3 words
+            title_result = cbt_engine.analyze(request.title)
+        
+        # Process cognitive distortions for content
+        content_distortion_details = []
+        cognitive_wrapper = cbt_engine.config.get("cognitive_wrapper")
+        
+        if cognitive_wrapper and "distortion_details" in content_result:
+            for dist in content_result.get("distortion_details", []):
+                content_distortion_details.append(CognitiveDistortion(
+                    distortion_type=dist["distortion_type"],
+                    confidence=dist["confidence"],
+                    emoji=dist["emoji"],
+                    explanation=cognitive_wrapper.get_distortion_explanation(dist["distortion_type"]),
+                    reframing_suggestion=cognitive_wrapper.get_reframing_suggestion(dist["distortion_type"])
+                ))
+        
+        # Build content analysis response
+        content_analysis = CBTAnalysisResponse(
+            emotion=content_result.get('emotion'),
+            emotion_score=content_result.get('emotion_score'),
+            original_emotion=content_result.get('original_emotion'),
+            emotion_source="text",
+            intent=content_result.get('intent'),
+            intent_score=content_result.get('intent_score'),
+            risk=content_result.get('risk'),
+            risk_score=content_result.get('risk_score'),
+            escalation=content_result.get('escalation'),
+            distortions=content_result.get('distortions', []),
+            distortion_details=content_distortion_details,
+            reframes=content_result.get('reframes', []),
+            behavioral_suggestions=content_result.get('behavioral_suggestions', []),
+            clinician_notes=content_result.get('clinician_notes', []),
+            user_facing=content_result.get('user_facing'),
+            analysis_timestamp=datetime.now(),
+            raw_analysis=content_result
+        )
+        
+        # Build title analysis if available
+        title_analysis = None
+        if title_result:
+            title_distortion_details = []
+            if cognitive_wrapper and "distortion_details" in title_result:
+                for dist in title_result.get("distortion_details", []):
+                    title_distortion_details.append(CognitiveDistortion(
+                        distortion_type=dist["distortion_type"],
+                        confidence=dist["confidence"],
+                        emoji=dist["emoji"],
+                        explanation=cognitive_wrapper.get_distortion_explanation(dist["distortion_type"]),
+                        reframing_suggestion=cognitive_wrapper.get_reframing_suggestion(dist["distortion_type"])
+                    ))
+            
+            title_analysis = CBTAnalysisResponse(
+                emotion=title_result.get('emotion'),
+                emotion_score=title_result.get('emotion_score'),
+                original_emotion=title_result.get('original_emotion'),
+                emotion_source="text",
+                intent=title_result.get('intent'),
+                intent_score=title_result.get('intent_score'),
+                risk=title_result.get('risk'),
+                risk_score=title_result.get('risk_score'),
+                escalation=title_result.get('escalation'),
+                distortions=title_result.get('distortions', []),
+                distortion_details=title_distortion_details,
+                reframes=title_result.get('reframes', []),
+                behavioral_suggestions=title_result.get('behavioral_suggestions', []),
+                clinician_notes=title_result.get('clinician_notes', []),
+                user_facing=title_result.get('user_facing'),
+                analysis_timestamp=datetime.now(),
+                raw_analysis=title_result
+            )
+        
+        # Generate overall insights
+        overall_sentiment = _determine_overall_sentiment(content_result, request.mood)
+        key_themes = _extract_key_themes(request.content, content_result)
+        therapeutic_insights = _generate_therapeutic_insights(content_result, title_result)
+        progress_indicators = _identify_progress_indicators(content_result, request.mood)
+        recommendations = _generate_journal_recommendations(content_result, title_result)
+        
+        return JournalAnalysisResponse(
+            content_analysis=content_analysis,
+            title_analysis=title_analysis,
+            overall_sentiment=overall_sentiment,
+            key_themes=key_themes,
+            therapeutic_insights=therapeutic_insights,
+            progress_indicators=progress_indicators,
+            recommendations=recommendations,
+            analysis_timestamp=datetime.now()
+        )
+        
+    except Exception as e:
+        logger.error(f"Journal analysis failed: {e}")
+        logger.error(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Journal analysis failed: {str(e)}")
+
+def _determine_overall_sentiment(content_result: Dict, mood: Optional[str]) -> str:
+    """Determine overall sentiment from analysis and self-reported mood"""
+    emotion = content_result.get('emotion', '').lower()
+    risk_score = content_result.get('risk_score', 0.0)
+    
+    if risk_score > 0.6:
+        return "concerning"
+    elif emotion in ['sad', 'angry', 'fearful', 'disgusted']:
+        return "negative"
+    elif emotion in ['happy', 'joyful', 'excited']:
+        return "positive"
+    elif mood and mood.lower() in ['happy', 'excited', 'loved']:
+        return "positive"
+    elif mood and mood.lower() in ['sad']:
+        return "negative"
+    else:
+        return "neutral"
+
+def _extract_key_themes(content: str, analysis: Dict) -> List[str]:
+    """Extract key themes from journal content"""
+    themes = []
+    
+    # Theme detection based on content analysis
+    emotion = analysis.get('emotion', '').lower()
+    intent = analysis.get('intent', '').lower()
+    distortions = analysis.get('distortions', [])
+    
+    if emotion:
+        themes.append(f"Emotional state: {emotion}")
+    
+    if intent and 'help' in intent:
+        themes.append("Seeking support")
+    
+    if distortions:
+        themes.append("Cognitive patterns identified")
+    
+    # Simple keyword-based themes
+    content_lower = content.lower()
+    if any(word in content_lower for word in ['work', 'job', 'career', 'boss']):
+        themes.append("Work/Career")
+    if any(word in content_lower for word in ['relationship', 'family', 'friend', 'partner']):
+        themes.append("Relationships")
+    if any(word in content_lower for word in ['anxiety', 'anxious', 'worry', 'nervous']):
+        themes.append("Anxiety")
+    if any(word in content_lower for word in ['sad', 'depression', 'depressed', 'down']):
+        themes.append("Mood concerns")
+    if any(word in content_lower for word in ['goal', 'achievement', 'success', 'progress']):
+        themes.append("Personal growth")
+        
+    return themes[:5]  # Limit to 5 themes
+
+def _generate_therapeutic_insights(content_result: Dict, title_result: Optional[Dict]) -> List[str]:
+    """Generate therapeutic insights from analysis"""
+    insights = []
+    
+    # Risk-based insights
+    risk_score = content_result.get('risk_score', 0.0)
+    if risk_score > 0.4:
+        insights.append("Entry indicates elevated emotional distress - consider professional support")
+    
+    # Distortion-based insights
+    distortions = content_result.get('distortions', [])
+    if distortions:
+        insights.append(f"Cognitive patterns detected: {', '.join(distortions[:3])}")
+    
+    # Emotional insights
+    emotion = content_result.get('emotion', '')
+    emotion_score = content_result.get('emotion_score', 0.0)
+    if emotion and emotion_score > 0.7:
+        insights.append(f"Strong {emotion} emotion detected - good emotional awareness")
+    
+    # Intent insights
+    intent = content_result.get('intent', '')
+    if 'help' in intent.lower():
+        insights.append("Demonstrates healthy help-seeking behavior")
+    
+    return insights[:4]  # Limit to 4 insights
+
+def _identify_progress_indicators(analysis: Dict, mood: Optional[str]) -> List[str]:
+    """Identify positive progress indicators"""
+    indicators = []
+    
+    # Positive emotional expressions
+    emotion = analysis.get('emotion', '').lower()
+    if emotion in ['happy', 'joyful', 'grateful']:
+        indicators.append("Positive emotional expression")
+    
+    # Self-awareness indicators
+    if analysis.get('distortions'):
+        indicators.append("Demonstrating self-awareness of thought patterns")
+    
+    # Mood alignment
+    if mood and mood in ['happy', 'excited', 'loved']:
+        indicators.append("Self-reported positive mood")
+    
+    # Behavioral insights from reframes
+    reframes = analysis.get('reframes', [])
+    if reframes:
+        indicators.append("Showing capacity for cognitive reframing")
+    
+    return indicators[:3]  # Limit to 3 indicators
+
+def _generate_journal_recommendations(content_result: Dict, title_result: Optional[Dict]) -> List[str]:
+    """Generate personalized recommendations"""
+    recommendations = []
+    
+    # Risk-based recommendations
+    risk_score = content_result.get('risk_score', 0.0)
+    if risk_score > 0.6:
+        recommendations.append("Consider reaching out to a mental health professional")
+    elif risk_score > 0.3:
+        recommendations.append("Practice grounding techniques and self-care activities")
+    
+    # Distortion-based recommendations
+    distortions = content_result.get('distortions', [])
+    if 'catastrophizing' in distortions:
+        recommendations.append("Try the 'best case, worst case, most likely case' exercise")
+    if 'all_or_nothing' in distortions:
+        recommendations.append("Practice identifying the gray areas in situations")
+    
+    # Emotion-based recommendations
+    emotion = content_result.get('emotion', '').lower()
+    if emotion in ['sad', 'angry']:
+        recommendations.append("Consider engaging in mood-lifting activities or exercise")
+    elif emotion == 'anxious':
+        recommendations.append("Try deep breathing or mindfulness exercises")
+    
+    # General recommendations
+    recommendations.append("Continue regular journaling to track patterns over time")
+    
+    return recommendations[:4]  # Limit to 4 recommendations
 
 # Global error handler
 @app.exception_handler(Exception)
