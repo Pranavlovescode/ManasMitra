@@ -22,6 +22,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 export default function TherapistDashboard() {
   const router = useRouter();
   const [selectedPatientId, setSelectedPatientId] = useState(null);
+  const [activeTab, setActiveTab] = useState("patients");
   const [isLoading, setIsLoading] = useState(false);
   const user = useUser();
   const { dbUser, loading: profileLoading, isProfileComplete } = useUserProfile();
@@ -75,6 +76,11 @@ export default function TherapistDashboard() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     router.push("/");
+  };
+
+  const handleSelectPatient = (patientId) => {
+    setSelectedPatientId(patientId);
+    setActiveTab("details"); // Automatically switch to Details tab
   };
 
   if (isLoading) {
@@ -284,7 +290,7 @@ export default function TherapistDashboard() {
         {/* Main Content */}
         <Card className="bg-white/80 backdrop-blur-sm border-white/20 shadow-xl">
           <CardContent className="p-8">
-            <Tabs defaultValue="patients" className="space-y-6">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
               <div className="flex justify-center">
                 <TabsList className="grid grid-cols-5 bg-gray-100/80 p-1 rounded-xl shadow-inner">
                   <TabsTrigger
@@ -338,7 +344,7 @@ export default function TherapistDashboard() {
               <TabsContent value="patients" className="space-y-4 mt-8">
                 <PatientList
                   therapistId={user.id}
-                  onSelectPatient={setSelectedPatientId}
+                  onSelectPatient={handleSelectPatient}
                 />
               </TabsContent>
 

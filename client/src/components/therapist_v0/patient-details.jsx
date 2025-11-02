@@ -10,6 +10,7 @@ import {
 } from "../ui/card";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
+import AssessmentReportModal from "./assessment-report-modal";
 
 export default function PatientDetails({ patientId, therapistId }) {
   // Type annotation removed
@@ -20,6 +21,7 @@ export default function PatientDetails({ patientId, therapistId }) {
   const [clinicalNotes, setClinicalNotes] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [showAssessmentReport, setShowAssessmentReport] = useState(false);
 
   useEffect(() => {
     fetchPatientData();
@@ -84,10 +86,20 @@ export default function PatientDetails({ patientId, therapistId }) {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>
-            {patient.userId?.firstName} {patient.userId?.lastName}
-          </CardTitle>
-          <CardDescription>{patient.userId?.email}</CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>
+                {patient.userId?.firstName} {patient.userId?.lastName}
+              </CardTitle>
+              <CardDescription>{patient.userId?.email}</CardDescription>
+            </div>
+            <Button 
+              onClick={() => setShowAssessmentReport(true)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold"
+            >
+              📊 View Assessment Report
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid md:grid-cols-3 gap-4">
@@ -191,6 +203,14 @@ export default function PatientDetails({ patientId, therapistId }) {
           </CardContent>
         </Card>
       )}
+
+      {/* Assessment Report Modal */}
+      <AssessmentReportModal
+        isOpen={showAssessmentReport}
+        onClose={() => setShowAssessmentReport(false)}
+        patientId={patientId}
+        patientName={`${patient?.userId?.firstName} ${patient?.userId?.lastName}`}
+      />
     </div>
   );
 }

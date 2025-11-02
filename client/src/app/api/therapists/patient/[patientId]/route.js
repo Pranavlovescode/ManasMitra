@@ -14,7 +14,8 @@ export async function GET(request, { params }) {
 
     await connectDB();
 
-    const { patientId } = params;
+    // Await params in Next.js 16
+    const { patientId } = await params;
 
     // Get patient details
     const patient = await Patient.findById(patientId)
