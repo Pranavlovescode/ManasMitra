@@ -151,6 +151,8 @@ export default function MultiAssessmentModule({ userId }) {
         const response = await fetch('/api/assessments');
         if (response.ok) {
           const data = await response.json();
+          console.log('📊 Loaded completed assessments:', data);
+          console.log('📊 Number of assessments:', data.length);
           setCompletedAssessments(data);
         }
       } catch (error) {
@@ -264,9 +266,13 @@ export default function MultiAssessmentModule({ userId }) {
   };
 
   const getAssessmentStatus = (assessmentId) => {
+    // Find the LATEST assessment for this specific type
+    // completedAssessments is sorted by date DESC, so first match is most recent
     const completed = completedAssessments.find(a => a[assessmentId]);
+    console.log(`🔍 Checking status for ${assessmentId}:`, completed ? 'Found' : 'Not found');
     if (completed) {
       const data = completed[assessmentId];
+      console.log(`   Score: ${data.score}, Severity: ${data.severity}, Date: ${completed.date}`);
       return {
         completed: true,
         date: new Date(completed.date).toLocaleDateString(),
