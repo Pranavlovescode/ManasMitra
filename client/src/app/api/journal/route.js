@@ -7,11 +7,12 @@ export async function GET(request) {
   try {
     await connectDB();
     
-    const { userId , isAuthenticated} = auth(request);
     const authData = await auth(request);
+    const { userId } = authData;
     console.log("Auth data:", authData);
 
-    if (!isAuthenticated) {
+    if (!authData.isAuthenticated || !userId) {
+      console.log("Journal GET - Not authenticated, returning 401");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -40,14 +41,24 @@ export async function POST(request) {
   try {
     await connectDB();
     
-    const { userId,isAuthenticated } = await auth(request);
-    console.log(userId);
-    if (!isAuthenticated) {
+    const authData = await auth(request);
+    const { userId } = authData;
+    console.log("POST userId:", userId);
+    
+    if (!authData.isAuthenticated || !userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await request.json();
-    const { title, content, selectedPrompt, mood, skipAnalysis = false } = body;
+    const { 
+      title, 
+      content, 
+      selectedPrompt, 
+      mood, 
+      inputMode,
+      voiceAnalysisResult,
+      skipAnalysis = false 
+    } = body;
 
     // Validate required fields
     if (!title || !content) {
@@ -63,6 +74,8 @@ export async function POST(request) {
       content: content.trim(),
       selectedPrompt: selectedPrompt || '',
       mood: mood || 'neutral',
+      inputMode: inputMode || 'text',
+      voiceAnalysisResult: voiceAnalysisResult || null,
     };
 
     // Perform CBT analysis if not skipped
@@ -84,33 +97,30 @@ export async function POST(request) {
         if (analysisResponse.ok) {
           const analysisData = await analysisResponse.json();
           
-          // Transform the analysis data to match our schema
+          // Transform the CBT analysis data to match our nested schema
+          const contentAnalysis = analysisData.content_analysis || {};
+          
           journalData.analysis = {
             contentAnalysis: {
-              emotion: analysisData.content_analysis?.emotion,
-              emotionScore: analysisData.content_analysis?.emotion_score,
-              intent: analysisData.content_analysis?.intent,
-              intentScore: analysisData.content_analysis?.intent_score,
-              risk: analysisData.content_analysis?.risk,
-              riskScore: analysisData.content_analysis?.risk_score,
-              distortions: analysisData.content_analysis?.distortions || [],
-              distortionDetails: analysisData.content_analysis?.distortion_details?.map(d => ({
+              emotion: contentAnalysis.emotion,
+              emotionScore: contentAnalysis.emotion_score,
+              intent: contentAnalysis.intent,
+              intentScore: contentAnalysis.intent_score,
+              risk: contentAnalysis.risk,
+              riskScore: contentAnalysis.risk_score,
+              distortions: contentAnalysis.distortions || [],
+              distortionDetails: contentAnalysis.distortion_details?.map(d => ({
                 distortionType: d.distortion_type,
                 confidence: d.confidence,
                 emoji: d.emoji,
                 explanation: d.explanation,
                 reframingSuggestion: d.reframing_suggestion
               })) || [],
-              reframes: analysisData.content_analysis?.reframes || [],
-              behavioralSuggestions: analysisData.content_analysis?.behavioral_suggestions || [],
-              clinicianNotes: analysisData.content_analysis?.clinician_notes || [],
+              reframes: contentAnalysis.reframes || [],
+              behavioralSuggestions: contentAnalysis.behavioral_suggestions || [],
+              clinicianNotes: contentAnalysis.clinician_notes || [],
             },
-            titleAnalysis: analysisData.title_analysis ? {
-              emotion: analysisData.title_analysis.emotion,
-              emotionScore: analysisData.title_analysis.emotion_score,
-              distortions: analysisData.title_analysis.distortions || [],
-            } : null,
-            overallSentiment: analysisData.overall_sentiment,
+            overallSentiment: analysisData.overall_sentiment || 'neutral',
             keyThemes: analysisData.key_themes || [],
             therapeuticInsights: analysisData.therapeutic_insights || [],
             progressIndicators: analysisData.progress_indicators || [],
@@ -143,8 +153,10 @@ export async function PUT(request) {
   try {
     await connectDB();
     
-    const { userId } = auth();
-    if (!userId) {
+    const authData = await auth(request);
+    const { userId } = authData;
+    
+    if (!authData.isAuthenticated || !userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -188,36 +200,32 @@ export async function PUT(request) {
         if (analysisResponse.ok) {
           const analysisData = await analysisResponse.json();
           
+          // Transform the flat CBT analysis data to match our nested schema
           updateData.analysis = {
             contentAnalysis: {
-              emotion: analysisData.content_analysis?.emotion,
-              emotionScore: analysisData.content_analysis?.emotion_score,
-              intent: analysisData.content_analysis?.intent,
-              intentScore: analysisData.content_analysis?.intent_score,
-              risk: analysisData.content_analysis?.risk,
-              riskScore: analysisData.content_analysis?.risk_score,
-              distortions: analysisData.content_analysis?.distortions || [],
-              distortionDetails: analysisData.content_analysis?.distortion_details?.map(d => ({
+              emotion: analysisData.emotion,
+              emotionScore: analysisData.emotion_score,
+              intent: analysisData.intent,
+              intentScore: analysisData.intent_score,
+              risk: analysisData.risk,
+              riskScore: analysisData.risk_score,
+              distortions: analysisData.distortions || [],
+              distortionDetails: analysisData.distortion_details?.map(d => ({
                 distortionType: d.distortion_type,
                 confidence: d.confidence,
                 emoji: d.emoji,
                 explanation: d.explanation,
                 reframingSuggestion: d.reframing_suggestion
               })) || [],
-              reframes: analysisData.content_analysis?.reframes || [],
-              behavioralSuggestions: analysisData.content_analysis?.behavioral_suggestions || [],
-              clinicianNotes: analysisData.content_analysis?.clinician_notes || [],
+              reframes: analysisData.reframes || [],
+              behavioralSuggestions: analysisData.behavioral_suggestions || [],
+              clinicianNotes: analysisData.clinician_notes || [],
             },
-            titleAnalysis: analysisData.title_analysis ? {
-              emotion: analysisData.title_analysis.emotion,
-              emotionScore: analysisData.title_analysis.emotion_score,
-              distortions: analysisData.title_analysis.distortions || [],
-            } : null,
-            overallSentiment: analysisData.overall_sentiment,
-            keyThemes: analysisData.key_themes || [],
-            therapeuticInsights: analysisData.therapeutic_insights || [],
-            progressIndicators: analysisData.progress_indicators || [],
-            recommendations: analysisData.recommendations || [],
+            overallSentiment: analysisData.emotion || 'neutral',
+            keyThemes: analysisData.distortions || [],
+            therapeuticInsights: analysisData.reframes?.slice(0, 3) || [],
+            progressIndicators: analysisData.behavioral_suggestions?.slice(0, 2) || [],
+            recommendations: [...(analysisData.reframes || []), ...(analysisData.behavioral_suggestions || [])].slice(0, 4),
             analysisTimestamp: new Date(analysisData.analysis_timestamp),
           };
         }
@@ -246,8 +254,10 @@ export async function DELETE(request) {
   try {
     await connectDB();
     
-    const { userId } = auth();
-    if (!userId) {
+    const authData = await auth(request);
+    const { userId } = authData;
+    
+    if (!authData.isAuthenticated || !userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

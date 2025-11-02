@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useUser } from '@clerk/nextjs';
+import { useState, useEffect } from "react";
+import { useUser } from "@clerk/nextjs";
 
 export function useUserProfile() {
   const { user, isLoaded } = useUser();
@@ -22,24 +22,34 @@ export function useUserProfile() {
 
       try {
         setLoading(true);
-        const response = await fetch('/api/users', {
-          method: 'GET',
+        setError(null);
+
+        const response = await fetch("/api/users", {
+          method: "GET",
           headers: {
-            'Content-Type': 'application/json',
+            "Content-Type": "application/json",
           },
         });
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          console.error('Profile fetch error:', response.status, errorData);
-          throw new Error(errorData.error || 'Failed to fetch user profile');
+
+          if (response.status === 401) {
+            console.warn("User not authenticated. Please sign in.");
+            setError("Please sign in to continue");
+            setDbUser(null);
+            return;
+          }
+
+          console.error("Profile fetch error:", response.status, errorData);
+          throw new Error(errorData.error || "Failed to fetch user profile");
         }
 
         const userData = await response.json();
         setDbUser(userData);
-        setError(null); // Clear any previous errors
+        setError(null);
       } catch (err) {
-        console.error('Error fetching user profile:', err);
+        console.error("Error fetching user profile:", err);
         setError(err.message);
         setDbUser(null);
       } finally {
@@ -61,7 +71,7 @@ export function useUserProfile() {
     refetch: () => {
       setLoading(true);
       fetchUserProfile();
-    }
+    },
   };
 }
 
@@ -69,27 +79,31 @@ function checkProfileCompleteness(user) {
   if (!user) return false;
 
   // Common required fields
-  const commonFields = ['firstName', 'lastName', 'email', 'role'];
-  const hasCommonFields = commonFields.every(field => user[field] && user[field].trim() !== '');
+  const commonFields = ["firstName", "lastName", "email", "role"];
+  const hasCommonFields = commonFields.every(
+    (field) => user[field] && user[field].trim() !== ""
+  );
 
   if (!hasCommonFields) return false;
 
   // Role-specific required fields
-  if (user.role === 'patient') {
-    const patientFields = ['dateOfBirth', 'emergencyContact'];
-    return patientFields.every(field => {
-      if (field === 'emergencyContact') {
+  if (user.role === "patient") {
+    const patientFields = ["dateOfBirth", "emergencyContact"];
+    return patientFields.every((field) => {
+      if (field === "emergencyContact") {
         return user[field] && user[field].name && user[field].phone;
       }
-      return user[field] && user[field].toString().trim() !== '';
+      return user[field] && user[field].toString().trim() !== "";
     });
-  } else if (user.role === 'therapist') {
-    const therapistFields = ['licenseNumber', 'specializations'];
-    return therapistFields.every(field => {
-      if (field === 'specializations') {
-        return user[field] && Array.isArray(user[field]) && user[field].length > 0;
+  } else if (user.role === "therapist") {
+    const therapistFields = ["licenseNumber", "specializations"];
+    return therapistFields.every((field) => {
+      if (field === "specializations") {
+        return (
+          user[field] && Array.isArray(user[field]) && user[field].length > 0
+        );
       }
-      return user[field] && user[field].toString().trim() !== '';
+      return user[field] && user[field].toString().trim() !== "";
     });
   }
 

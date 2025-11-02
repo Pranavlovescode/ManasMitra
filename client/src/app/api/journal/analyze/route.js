@@ -7,8 +7,10 @@ export async function POST(request) {
   try {
     await connectDB();
     
-    const { userId } = auth();
-    if (!userId) {
+    const authData = await auth(request);
+    const { userId } = authData;
+    
+    if (!authData.isAuthenticated || !userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -52,33 +54,30 @@ export async function POST(request) {
 
       const analysisData = await analysisResponse.json();
       
-      // Transform and update the journal with analysis
+      // Transform the CBT analysis data to match our nested schema
+      const contentAnalysis = analysisData.content_analysis || {};
+      
       const analysis = {
         contentAnalysis: {
-          emotion: analysisData.content_analysis?.emotion,
-          emotionScore: analysisData.content_analysis?.emotion_score,
-          intent: analysisData.content_analysis?.intent,
-          intentScore: analysisData.content_analysis?.intent_score,
-          risk: analysisData.content_analysis?.risk,
-          riskScore: analysisData.content_analysis?.risk_score,
-          distortions: analysisData.content_analysis?.distortions || [],
-          distortionDetails: analysisData.content_analysis?.distortion_details?.map(d => ({
+          emotion: contentAnalysis.emotion,
+          emotionScore: contentAnalysis.emotion_score,
+          intent: contentAnalysis.intent,
+          intentScore: contentAnalysis.intent_score,
+          risk: contentAnalysis.risk,
+          riskScore: contentAnalysis.risk_score,
+          distortions: contentAnalysis.distortions || [],
+          distortionDetails: contentAnalysis.distortion_details?.map(d => ({
             distortionType: d.distortion_type,
             confidence: d.confidence,
             emoji: d.emoji,
             explanation: d.explanation,
             reframingSuggestion: d.reframing_suggestion
           })) || [],
-          reframes: analysisData.content_analysis?.reframes || [],
-          behavioralSuggestions: analysisData.content_analysis?.behavioral_suggestions || [],
-          clinicianNotes: analysisData.content_analysis?.clinician_notes || [],
+          reframes: contentAnalysis.reframes || [],
+          behavioralSuggestions: contentAnalysis.behavioral_suggestions || [],
+          clinicianNotes: contentAnalysis.clinician_notes || [],
         },
-        titleAnalysis: analysisData.title_analysis ? {
-          emotion: analysisData.title_analysis.emotion,
-          emotionScore: analysisData.title_analysis.emotion_score,
-          distortions: analysisData.title_analysis.distortions || [],
-        } : null,
-        overallSentiment: analysisData.overall_sentiment,
+        overallSentiment: analysisData.overall_sentiment || 'neutral',
         keyThemes: analysisData.key_themes || [],
         therapeuticInsights: analysisData.therapeutic_insights || [],
         progressIndicators: analysisData.progress_indicators || [],
