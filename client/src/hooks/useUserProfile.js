@@ -125,20 +125,9 @@ function checkProfileCompleteness(user) {
 
   if (!hasCommonFields) return false;
 
-  // Role-specific required fields
-  if (user.role === "patient") {
-    const patientFields = ["dateOfBirth", "emergencyContact"];
-    return patientFields.every((field) => {
-      if (field === "emergencyContact") {
-        return user[field] && user[field].name && user[field].phone;
-      }
-      return user[field] && user[field].toString().trim() !== "";
-    });
-  } else if (user.role === 'therapist') {
-    // For therapists, check if they have basic profile fields and profileComplete flag
-    // The detailed therapist profile is handled by the Therapist model
-    return user.profileComplete === true;
-  }
-
-  return false;
+  // For both patients and therapists, rely on the profileComplete flag
+  // This flag is set to true when:
+  // - Patients complete their detailed information via /api/patients
+  // - Therapists complete their onboarding process
+  return user.profileComplete === true;
 }

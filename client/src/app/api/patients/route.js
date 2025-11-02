@@ -18,10 +18,7 @@ export async function GET(request) {
       return NextResponse.json(
         {
           error: "Unauthorized",
-          debug: {
-            authResult,
-            message: "No userId found in getAuth() result",
-          },
+          message: "No userId found in auth() result",
         },
         { status: 401 }
       );
@@ -82,8 +79,7 @@ export async function GET(request) {
 export async function POST(req) {
   try {
     console.log("POST /api/patients - Starting authentication check");
-    const authResult = getAuth(req);
-    const { userId } = authResult || {};
+    const { userId } = await auth();
     console.log("Auth userId:", userId);
 
     if (!userId) {
@@ -155,8 +151,7 @@ export async function POST(req) {
 // PUT /api/patients - Update patient details
 export async function PUT(req) {
   try {
-    const authResult = getAuth(req);
-    const { userId } = authResult || {};
+    const { userId } = await auth();
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -217,11 +212,10 @@ export async function PUT(req) {
   }
 }
 
-// DELETE /api/patients - Delete patient details (soft delete)
+// DELETE /api/patients - Soft delete patient details  
 export async function DELETE(req) {
   try {
-    const authResult = getAuth(req);
-    const { userId } = authResult || {};
+    const { userId } = await auth();
 
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

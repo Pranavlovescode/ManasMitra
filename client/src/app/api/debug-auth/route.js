@@ -1,19 +1,19 @@
-import { getAuth } from '@clerk/nextjs/server';
+import { auth } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 
 export async function POST(request) {
   try {
     // Get authentication details
-    const auth = getAuth(request);
-    const { userId, sessionId } = auth;
+    const { userId, sessionId } = await auth();
 
     if (!userId) {
       return NextResponse.json({
         authenticated: false,
         error: 'No authenticated user found',
         debug: {
-          auth,
-          message: 'No userId found in getAuth() result'
+          userId,
+          sessionId,
+          message: 'No userId found in auth() result'
         }
       }, { status: 401 });
     }
@@ -24,7 +24,8 @@ export async function POST(request) {
       userId,
       sessionId,
       debug: {
-        auth,
+        userId,
+        sessionId,
         message: 'Authentication successful'
       }
     });

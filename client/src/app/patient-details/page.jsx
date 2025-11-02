@@ -181,13 +181,6 @@ export default function PatientDetailsPage() {
     }
   }, [currentStep, formInitialized, user, FORM_STORAGE_KEY]);
 
-  // Check if user is already a patient and redirect if needed
-  useEffect(() => {
-    if (isLoaded && user && user.unsafeMetadata?.role !== 'patient') {
-      router.push('/dashboard');
-    }
-  }, [isLoaded, user, router]);
-
   // Calculate completion percentage
   const calculateCompletionPercentage = (data) => {
     let totalFields = 0;
@@ -484,7 +477,7 @@ export default function PatientDetailsPage() {
       if (response.ok) {
         // Clear saved form data on successful submission
         clearSavedFormData(true); // Skip confirmation dialog
-        router.push('/dashboard');
+        router.push('/patient/dashboard');
       } else {
         const error = await response.json();
         console.error('API Response Status:', response.status);
@@ -518,9 +511,9 @@ export default function PatientDetailsPage() {
   console.log('user.emailAddresses:', user?.emailAddresses);
   console.log('user.unsafeMetadata:', user?.unsafeMetadata);
 
-  // If user is not loaded or not authenticated, redirect to sign-in
-  if (!user) {
-    console.log('No user found, redirecting to sign-in');
+  // If user is not authenticated after loading is complete, redirect to sign-in
+  if (isLoaded && !user) {
+    console.log('No user found after loading, redirecting to sign-in');
     router.push('/sign-in');
     return (
       <div className="min-h-screen bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">

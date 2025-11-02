@@ -1,7 +1,7 @@
 'use client';
 
 import { useUser } from '@clerk/nextjs';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useUserProfile } from '../hooks/useUserProfile.js';
 import ProfileCompletion from '../app/testing/ProfileCompletion.jsx';
@@ -10,11 +10,26 @@ export default function RoleBasedRedirect() {
   const { user, isLoaded } = useUser();
   const { dbUser, loading, isProfileComplete } = useUserProfile();
   const router = useRouter();
+  const pathname = usePathname();
   const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
     const handleRedirect = async () => {
-      if (!isLoaded || loading || !user || isRedirecting) return;
+      console.log('[RoleBasedRedirect] useEffect triggered', { 
+        isLoaded, 
+        loading, 
+        hasUser: !!user, 
+        isRedirecting, 
+        pathname,
+        userRole: user?.publicMetadata?.role || user?.unsafeMetadata?.role,
+        dbUserRole: dbUser?.role,
+        isProfileComplete 
+      });
+      
+      if (!isLoaded || loading || !user || isRedirecting) {
+        console.log('[RoleBasedRedirect] Skipping redirect due to loading state');
+        return;
+      }
 
       // Only redirect if we have enough information
       if (!dbUser && !user?.publicMetadata?.role && !user?.unsafeMetadata?.role) {
@@ -33,36 +48,30 @@ export default function RoleBasedRedirect() {
           userRole = dbUser.role;
         }
 
-        // If still no role, try fetching from API
+        // If still no role, assume patient for now (common for Google OAuth users)
+        // The user will be created as a patient in the database via the API
         if (!userRole) {
-          try {
-            const response = await fetch('/api/users', {
-              method: 'GET',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-            });
-
-            if (response.ok) {
-              const userData = await response.json();
-              userRole = userData?.role;
-            }
-          } catch (error) {
-            console.error('Error fetching user data:', error);
-          }
-        }
-
-        // If user exists but no role is set, redirect to role selection or profile completion
-        if (!userRole) {
-          console.log('No role found, redirecting to sign-up for role selection');
-          router.push('/sign-up');
-          return;
+          console.log('No role found, assuming patient role for new user');
+          userRole = 'patient';
         }
 
         // Check if profile is complete for therapists
         if (userRole === 'therapist' && !isProfileComplete) {
-          console.log('Therapist profile incomplete, redirecting to onboarding');
-          router.push('/therapist/onboarding');
+          // Only redirect if not already on the therapist onboarding page
+          if (pathname !== '/therapist/onboarding') {
+            console.log('Therapist profile incomplete, redirecting to onboarding');
+            router.push('/therapist/onboarding');
+          }
+          return;
+        }
+
+        // Check if profile is complete for patients
+        if (userRole === 'patient' && !isProfileComplete) {
+          // Only redirect if not already on the patient details page
+          if (pathname !== '/patient-details') {
+            console.log('Patient profile incomplete, redirecting to patient details onboarding');
+            router.push('/patient-details');
+          }
           return;
         }
 
@@ -91,7 +100,7 @@ export default function RoleBasedRedirect() {
     // Add a small delay to prevent immediate redirects
     const timeout = setTimeout(handleRedirect, 500);
     return () => clearTimeout(timeout);
-  }, [user, isLoaded, dbUser, loading, router, isProfileComplete]);
+  }, [user, isLoaded, dbUser, loading, router, isProfileComplete, pathname]);
 
   // Show profile completion if user exists but profile is not complete
   if (isLoaded && user && dbUser && !isProfileComplete && !isRedirecting) {
@@ -103,6 +112,16 @@ export default function RoleBasedRedirect() {
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
             <p className="text-gray-600">Redirecting to therapist onboarding...</p>
+          </div>
+        </div>
+      );
+    }
+    if (userRole === 'patient') {
+      return (
+        <div className="min-h-screen bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Redirecting to patient onboarding...</p>
           </div>
         </div>
       );
