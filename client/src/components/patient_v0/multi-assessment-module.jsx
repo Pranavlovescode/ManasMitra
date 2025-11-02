@@ -103,6 +103,39 @@ const ASSESSMENTS = {
       return { level: "Low Stress", color: "bg-green-500" };
     }
   },
+  // sleep: {
+  //   id: 'sleep',
+  //   title: 'ISI',
+  //   subtitle: 'Insomnia Severity Index',
+  //   description: 'A 7-question assessment to evaluate sleep quality',
+  //   icon: '😴',
+  //   color: 'from-indigo-500 to-blue-600',
+  //   questions: [
+  //     "Rate the current severity of your insomnia problem: Difficulty falling asleep",
+  //     "Rate the current severity of your insomnia problem: Difficulty staying asleep", 
+  //     "Rate the current severity of your insomnia problem: Problem waking up too early",
+  //     "How satisfied/dissatisfied are you with your current sleep pattern?",
+  //     "To what extent do you consider your sleep problem to interfere with your daily functioning?",
+  //     "How noticeable to others do you think your sleeping problem is in terms of impairing your quality of life?",
+  //     "How worried/distressed are you about your current sleep problem?"
+  //   ],
+  //   answerOptions: [
+  //     { value: 0, label: "None" },
+  //     { value: 1, label: "Mild" },
+  //     { value: 2, label: "Moderate" },
+  //     { value: 3, label: "Severe" },
+  //     { value: 4, label: "Very Severe" }
+  //   ],
+  //   getSeverity: (score) => {
+  //     if (score >= 22) return { level: "Severe Insomnia", color: "bg-red-500" };
+  //     if (score >= 15) return { level: "Moderate Insomnia", color: "bg-orange-500" };
+  //     if (score >= 8) return { level: "Mild Insomnia", color: "bg-yellow-500" };
+  //     return { level: "No Insomnia", color: "bg-green-500" };
+  //   }
+  // }
+
+
+  // ...existing code...
   sleep: {
     id: 'sleep',
     title: 'ISI',
@@ -119,12 +152,65 @@ const ASSESSMENTS = {
       "How noticeable to others do you think your sleeping problem is in terms of impairing your quality of life?",
       "How worried/distressed are you about your current sleep problem?"
     ],
+    // Per-question customized answer options (array of option-arrays)
+    // If an assessment uses a single shared set, keep answerOptions as before (array of objects).
     answerOptions: [
-      { value: 0, label: "None" },
-      { value: 1, label: "Mild" },
-      { value: 2, label: "Moderate" },
-      { value: 3, label: "Severe" },
-      { value: 4, label: "Very Severe" }
+      // Q1: severity scale
+      [
+        { value: 0, label: "No problem (falling asleep within 20 minutes)" },
+        { value: 1, label: "Mild (falling asleep within 20-30 minutes)" },
+        { value: 2, label: "Moderate (falling asleep within 30-60 minutes)" },
+        { value: 3, label: "Severe (taking more than an hour to fall asleep)" },
+        { value: 4, label: "Very severe (struggle for several hours to fall asleep)" }
+      ],
+      // Q2: severity scale (same as Q1)
+      [
+        { value: 0, label: "No problem (rarely wakeup at night)" },
+        { value: 1, label: "Mild (waking up once or twice a night )" },
+        { value: 2, label: "Moderate (waking up multiple times a night)" },
+        { value: 3, label: "Severe (waking up frequently and having trouble falling back asleep)" },
+        { value: 4, label: "Very severe (unable to stay asleep for more than a few hours)" }
+      ],
+      // Q3: severity scale (same)
+      [
+        { value: 0, label: "No problem" },
+        { value: 1, label: "Little Early" },
+        { value: 2, label: "30-60 minutes early" },
+        { value: 3, label: "1-2 hours early" },
+        { value: 4, label: "Several hours early" }
+      ],
+      // Q4: satisfaction scale (reverse wording)
+      [
+        { value: 0, label: "Very satisfied" },
+        { value: 1, label: "Somewhat satisfied" },
+        { value: 2, label: "Neutral" },
+        { value: 3, label: "Somewhat dissatisfied" },
+        { value: 4, label: "Very dissatisfied" }
+      ],
+      // Q5: interference scale
+      [
+        { value: 0, label: "Not at all" },
+        { value: 1, label: "A little" },
+        { value: 2, label: "Somewhat" },
+        { value: 3, label: "Quite a bit" },
+        { value: 4, label: "Extremely" }
+      ],
+      // Q6: noticeability scale
+      [
+        { value: 0, label: "Not noticeable" },
+        { value: 1, label: "Slightly noticeable" },
+        { value: 2, label: "Moderately noticeable" },
+        { value: 3, label: "Very noticeable" },
+        { value: 4, label: "Extremely noticeable" }
+      ],
+      // Q7: distress/worry scale
+      [
+        { value: 0, label: "Not at all worried" },
+        { value: 1, label: "Slightly worried" },
+        { value: 2, label: "Moderately worried" },
+        { value: 3, label: "Very worried" },
+        { value: 4, label: "Extremely worried" }
+      ]
     ],
     getSeverity: (score) => {
       if (score >= 22) return { level: "Severe Insomnia", color: "bg-red-500" };
@@ -133,6 +219,7 @@ const ASSESSMENTS = {
       return { level: "No Insomnia", color: "bg-green-500" };
     }
   }
+  // ...existing code...
 };
 
 export default function MultiAssessmentModule({ userId }) {
@@ -395,7 +482,7 @@ export default function MultiAssessmentModule({ userId }) {
               </h3>
             </div>
 
-            <div className="grid grid-cols-1 gap-3">
+            {/* <div className="grid grid-cols-1 gap-3">
               {selectedAssessment.answerOptions.map((option) => (
                 <button
                   key={option.value}
@@ -420,7 +507,55 @@ export default function MultiAssessmentModule({ userId }) {
                   </div>
                 </button>
               ))}
-            </div>
+            </div> */}
+
+
+                        // ...existing code...
+                        <div className="grid grid-cols-1 gap-3">
+                          {(() => {
+                            // support either:
+                            // - shared answerOptions: array of option objects
+                            // - per-question answerOptions: array of arrays (one array per question)
+                            const rawOptions = selectedAssessment.answerOptions || [];
+                            const options =
+                              Array.isArray(rawOptions) && rawOptions.length > 0 && Array.isArray(rawOptions[0])
+                                ? // per-question options: use currentQuestion slot, fallback to empty array
+                                  rawOptions[currentQuestion] || []
+                                : // shared options
+                                  rawOptions;
+            
+                            return (options || []).map((option, idx) => {
+                              const key = `${currentQuestion}-${option.value ?? idx}`;
+                              return (
+                                <button
+                                  key={key}
+                                  onClick={() => handleAnswer(option.value)}
+                                  className={`p-4 rounded-lg border-2 transition-all duration-200 text-left ${
+                                    answers[currentQuestion] === option.value
+                                      ? "border-indigo-500 bg-indigo-50 text-indigo-900"
+                                      : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <div
+                                      className={`w-4 h-4 rounded-full border-2 ${
+                                        answers[currentQuestion] === option.value
+                                          ? "border-indigo-500 bg-indigo-500"
+                                          : "border-gray-300"
+                                      }`}
+                                    >
+                                      {answers[currentQuestion] === option.value && (
+                                        <div className="w-full h-full rounded-full bg-white scale-50" />
+                                      )}
+                                    </div>
+                                    <span className="font-medium">{option.label}</span>
+                                  </div>
+                                </button>
+                              );
+                            });
+                          })()}
+                        </div>
+            // ...existing code...
           </div>
         </Card>
 
