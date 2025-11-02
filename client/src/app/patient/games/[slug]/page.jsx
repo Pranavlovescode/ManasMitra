@@ -2,7 +2,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui_1/button";
 
 const GAME_META = {
@@ -28,32 +34,36 @@ export default function GameRunnerPage() {
   useEffect(() => {
     function onMessage(ev) {
       const data = ev?.data;
-      if (!data || data.type !== 'mentalcure:result') return;
+      if (!data || data.type !== "mentalcure:result") return;
       if (data.gameId !== slug) return;
-      setStatus('Saving result...');
+      setStatus("Saving result...");
       const payload = data.payload || {};
-      const body = { gameId: slug, score: Number(payload.score ?? 0), metrics: payload };
-      fetch('/api/games/results', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const body = {
+        gameId: slug,
+        score: Number(payload.score ?? 0),
+        metrics: payload,
+      };
+      fetch("/api/games/results", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       })
         .then(async (r) => {
           if (r.ok) {
             const j = await r.json();
             setSaved(j);
-            setStatus('Saved!');
+            setStatus("Saved!");
           } else {
-            setStatus('Failed to save');
+            setStatus("Failed to save");
           }
         })
-        .catch(() => setStatus('Failed to save'))
+        .catch(() => setStatus("Failed to save"))
         .finally(() => {
-          setTimeout(() => setStatus(''), 2500);
+          setTimeout(() => setStatus(""), 2500);
         });
     }
-    window.addEventListener('message', onMessage);
-    return () => window.removeEventListener('message', onMessage);
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
   }, [slug]);
 
   return (
@@ -62,7 +72,12 @@ export default function GameRunnerPage() {
         <h1 className="text-xl font-semibold">{meta.title}</h1>
         <div className="flex items-center gap-2">
           {status && <span className="text-sm text-gray-600">{status}</span>}
-          <Button variant="outline" onClick={() => router.push('/patient/games')}>Back</Button>
+          <Button
+            variant="outline"
+            onClick={() => router.push("/patient/games")}
+          >
+            Back
+          </Button>
         </div>
       </div>
 
@@ -70,16 +85,30 @@ export default function GameRunnerPage() {
         <Card>
           <CardHeader>
             <CardTitle>Last Result</CardTitle>
-            <CardDescription>Saved {new Date(saved.createdAt).toLocaleString()}</CardDescription>
+            <CardDescription>
+              Saved {new Date(saved.createdAt).toLocaleString()}
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="text-sm text-gray-700 flex gap-6">
-              <div>Score: <span className="font-semibold">{saved.score}</span></div>
-              {typeof saved.metrics?.accuracy === 'number' && (
-                <div>Accuracy: <span className="font-semibold">{Math.round(saved.metrics.accuracy * 100)}%</span></div>
+              <div>
+                Score: <span className="font-semibold">{saved.score}</span>
+              </div>
+              {typeof saved.metrics?.accuracy === "number" && (
+                <div>
+                  Accuracy:{" "}
+                  <span className="font-semibold">
+                    {Math.round(saved.metrics.accuracy * 100)}%
+                  </span>
+                </div>
               )}
-              {typeof saved.metrics?.avgReactionMs === 'number' && (
-                <div>Avg RT: <span className="font-semibold">{Math.round(saved.metrics.avgReactionMs)} ms</span></div>
+              {typeof saved.metrics?.avgReactionMs === "number" && (
+                <div>
+                  Avg RT:{" "}
+                  <span className="font-semibold">
+                    {Math.round(saved.metrics.avgReactionMs)} ms
+                  </span>
+                </div>
               )}
             </div>
           </CardContent>
@@ -87,7 +116,12 @@ export default function GameRunnerPage() {
       )}
 
       <div className="w-full h-[75vh] rounded-xl overflow-hidden border border-gray-200 bg-white">
-        <iframe ref={iframeRef} src={src} className="w-full h-full" title={meta.title} />
+        <iframe
+          ref={iframeRef}
+          src={src}
+          className="w-full h-full"
+          title={meta.title}
+        />
       </div>
     </div>
   );

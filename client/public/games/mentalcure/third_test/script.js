@@ -1,16 +1,27 @@
-const images = ['apple', 'banana', 'car', 'dog', 'cat', 'ball', 'book', 'star', 'cup', 'hat'];
-const gameBoard = document.getElementById('game-board');
-const timeEl = document.getElementById('time');
-const scoreEl = document.getElementById('score');
-const roundEl = document.getElementById('round');
-const startBtn = document.getElementById('start-btn');
-const inputArea = document.getElementById('input-area');
-const userInput = document.getElementById('user-input');
-const submitBtn = document.getElementById('submit-btn');
-const roundResult = document.getElementById('round-result');
-const summary = document.getElementById('final-summary');
-const summaryBody = document.getElementById('summary-body');
-const instructionText = document.getElementById('instruction-text');
+const images = [
+  "apple",
+  "banana",
+  "car",
+  "dog",
+  "cat",
+  "ball",
+  "book",
+  "star",
+  "cup",
+  "hat",
+];
+const gameBoard = document.getElementById("game-board");
+const timeEl = document.getElementById("time");
+const scoreEl = document.getElementById("score");
+const roundEl = document.getElementById("round");
+const startBtn = document.getElementById("start-btn");
+const inputArea = document.getElementById("input-area");
+const userInput = document.getElementById("user-input");
+const submitBtn = document.getElementById("submit-btn");
+const roundResult = document.getElementById("round-result");
+const summary = document.getElementById("final-summary");
+const summaryBody = document.getElementById("summary-body");
+const instructionText = document.getElementById("instruction-text");
 
 let round = 1;
 let score = 0;
@@ -27,27 +38,27 @@ function startGame() {
   results = [];
   scoreEl.textContent = score;
   roundEl.textContent = `${round}/5`;
-  startBtn.classList.add('hidden');
-  roundResult.classList.add('hidden');
-  summary.classList.add('hidden');
-  inputArea.classList.add('hidden');
-  instructionText.textContent = 'Memorize the order of these images:';
+  startBtn.classList.add("hidden");
+  roundResult.classList.add("hidden");
+  summary.classList.add("hidden");
+  inputArea.classList.add("hidden");
+  instructionText.textContent = "Memorize the order of these images:";
   nextRound();
 }
 
 function nextRound() {
   pattern = [];
-  inputArea.classList.add('hidden');
-  gameBoard.innerHTML = '';
-  userInput.value = '';
+  inputArea.classList.add("hidden");
+  gameBoard.innerHTML = "";
+  userInput.value = "";
   timeLeft = 10;
   timeEl.textContent = timeLeft;
 
   for (let i = 0; i < 5; i++) {
     const item = images[Math.floor(Math.random() * images.length)];
     pattern.push(item);
-    const div = document.createElement('div');
-    div.className = 'shape';
+    const div = document.createElement("div");
+    div.className = "shape";
     div.textContent = item;
     gameBoard.appendChild(div);
   }
@@ -63,15 +74,16 @@ function nextRound() {
 }
 
 function showInput() {
-  gameBoard.innerHTML = '';
-  instructionText.textContent = 'Enter the image sequence using image names (e.g., apple banana car):';
-  inputArea.classList.remove('hidden');
+  gameBoard.innerHTML = "";
+  instructionText.textContent =
+    "Enter the image sequence using image names (e.g., apple banana car):";
+  inputArea.classList.remove("hidden");
   userInput.focus();
   inputStartTime = Date.now();
   isInputActive = true;
 }
 
-submitBtn.addEventListener('click', () => {
+submitBtn.addEventListener("click", () => {
   if (!isInputActive) return;
   isInputActive = false;
 
@@ -89,21 +101,21 @@ submitBtn.addEventListener('click', () => {
     pattern: [...pattern],
     answer: answer,
     correct: correct,
-    time: Number(reactionTime)
+    time: Number(reactionTime),
   });
 
   score += correct;
   scoreEl.textContent = score;
   roundResult.textContent = `You got ${correct}/5 correct.`;
-  roundResult.classList.remove('hidden');
-  inputArea.classList.add('hidden');
+  roundResult.classList.remove("hidden");
+  inputArea.classList.add("hidden");
 
   if (round < 5) {
     round++;
     roundEl.textContent = `${round}/5`;
     setTimeout(() => {
-      roundResult.classList.add('hidden');
-      instructionText.textContent = 'Memorize the order of these images:';
+      roundResult.classList.add("hidden");
+      instructionText.textContent = "Memorize the order of these images:";
       nextRound();
     }, 2000);
   } else {
@@ -112,35 +124,41 @@ submitBtn.addEventListener('click', () => {
 });
 
 function showSummary() {
-  roundResult.classList.add('hidden');
-  instructionText.textContent = 'Test Completed. See your results below:';
-  gameBoard.innerHTML = '';
-  summaryBody.innerHTML = '';
+  roundResult.classList.add("hidden");
+  instructionText.textContent = "Test Completed. See your results below:";
+  gameBoard.innerHTML = "";
+  summaryBody.innerHTML = "";
 
-  results.forEach(r => {
-    const tr = document.createElement('tr');
+  results.forEach((r) => {
+    const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${r.round}</td>
-      <td>${r.pattern.join(', ')}</td>
-      <td>${r.answer.join(', ')}</td>
+      <td>${r.pattern.join(", ")}</td>
+      <td>${r.answer.join(", ")}</td>
       <td>${r.correct}/5</td>
       <td>${r.time}</td>
     `;
     summaryBody.appendChild(tr);
   });
 
-  summary.classList.remove('hidden');
-  startBtn.textContent = 'Restart Test';
-  startBtn.classList.remove('hidden');
+  summary.classList.remove("hidden");
+  startBtn.textContent = "Restart Test";
+  startBtn.classList.remove("hidden");
 
   // Emit result to parent wrapper
   try {
-    const avgTime = results.length ? (results.reduce((a, r) => a + r.time, 0) / results.length) : 0;
+    const avgTime = results.length
+      ? results.reduce((a, r) => a + r.time, 0) / results.length
+      : 0;
     const payload = { score, rounds: 5, avgReactionMs: avgTime * 1000 };
-    window.parent && window.parent.postMessage({ type: 'mentalcure:result', gameId: 'third_test', payload }, '*');
+    window.parent &&
+      window.parent.postMessage(
+        { type: "mentalcure:result", gameId: "third_test", payload },
+        "*"
+      );
   } catch (e) {
-    console.warn('Failed to postMessage result:', e);
+    console.warn("Failed to postMessage result:", e);
   }
 }
 
-startBtn.addEventListener('click', startGame);
+startBtn.addEventListener("click", startGame);

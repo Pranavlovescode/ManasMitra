@@ -1,36 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Stroop Effect</title>
-  <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-  <div class="game-container">
-    <div class="header">
-      <h1>Stroop Effect</h1>
-      <div class="game-info">
-        <div>Score: <span id="score">0</span></div>
-        <div>Round: <span id="round">1</span>/5</div>
-        <div>Question: <span id="question">0</span>/5</div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stroop Effect</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="game-container">
+      <div class="header">
+        <h1>Stroop Effect</h1>
+        <div class="game-info">
+          <div>Score: <span id="score">0</span></div>
+          <div>Round: <span id="round">1</span>/5</div>
+          <div>Question: <span id="question">0</span>/5</div>
+        </div>
+      </div>
+
+      <div id="stroop-word" class="stroop-word"></div>
+      <div id="color-buttons" class="buttons"></div>
+
+      <div class="controls">
+        <button id="start-btn" class="btn">Start</button>
+        <div id="round-result" class="round-result hidden"></div>
+      </div>
+
+      <div id="final-result" class="hidden">
+        <h2>Test Complete</h2>
+        <div id="final-stats"></div>
       </div>
     </div>
 
-    <div id="stroop-word" class="stroop-word"></div>
-    <div id="color-buttons" class="buttons"></div>
-
-    <div class="controls">
-      <button id="start-btn" class="btn">Start</button>
-      <div id="round-result" class="round-result hidden"></div>
-    </div>
-
-    <div id="final-result" class="hidden">
-      <h2>Test Complete</h2>
-      <div id="final-stats"></div>
-    </div>
-  </div>
-
-  <script src="script.js"></script>
-</body>
+    <script src="script.js"></script>
+  </body>
 </html>

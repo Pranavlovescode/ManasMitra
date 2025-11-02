@@ -1,6 +1,36 @@
-.game-container{max-width:900px;margin:20px auto;background:#fff;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.08);padding:24px;font-family:system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial}
-.header h1{color:#6c5ce7;margin:0 0 8px}
-.words{min-height:48px;margin:8px 0;display:flex;gap:8px;flex-wrap:wrap}
-.btn{background:#6c5ce7;color:#fff;border:none;border-radius:8px;padding:10px 16px;cursor:pointer}
-.round-result{margin-top:12px;padding:10px 14px;border-radius:8px}
-.hidden{display:none}
+.game-container {
+  max-width: 900px;
+  margin: 20px auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  padding: 24px;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+}
+.header h1 {
+  color: #6c5ce7;
+  margin: 0 0 8px;
+}
+.words {
+  min-height: 48px;
+  margin: 8px 0;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.btn {
+  background: #6c5ce7;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+}
+.round-result {
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+}
+.hidden {
+  display: none;
+}

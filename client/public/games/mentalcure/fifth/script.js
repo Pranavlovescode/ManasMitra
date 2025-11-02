@@ -1,4 +1,4 @@
-const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange'];
+const colors = ["red", "blue", "green", "yellow", "purple", "orange"];
 const totalRounds = 5;
 const questionsPerRound = 5;
 
@@ -11,18 +11,18 @@ let roundCorrect = 0;
 let startTime;
 let totalReactionTime = 0;
 
-const startBtn = document.getElementById('start-btn');
-const stroopWord = document.getElementById('stroop-word');
-const colorButtons = document.getElementById('color-buttons');
-const scoreEl = document.getElementById('score');
-const roundEl = document.getElementById('round');
-const questionEl = document.getElementById('question');
-const roundResult = document.getElementById('round-result');
-const finalResult = document.getElementById('final-result');
-const finalStats = document.getElementById('final-stats');
+const startBtn = document.getElementById("start-btn");
+const stroopWord = document.getElementById("stroop-word");
+const colorButtons = document.getElementById("color-buttons");
+const scoreEl = document.getElementById("score");
+const roundEl = document.getElementById("round");
+const questionEl = document.getElementById("question");
+const roundResult = document.getElementById("round-result");
+const finalResult = document.getElementById("final-result");
+const finalStats = document.getElementById("final-stats");
 
-startBtn.addEventListener('click', () => {
-  startBtn.style.display = 'none';
+startBtn.addEventListener("click", () => {
+  startBtn.style.display = "none";
 
   round = 1;
   question = 0;
@@ -36,8 +36,8 @@ startBtn.addEventListener('click', () => {
   scoreEl.textContent = score;
   questionEl.textContent = question;
 
-  roundResult.classList.add('hidden');
-  finalResult.classList.add('hidden');
+  roundResult.classList.add("hidden");
+  finalResult.classList.add("hidden");
 
   nextQuestion();
 });
@@ -53,7 +53,7 @@ function nextQuestion() {
       question = 0;
       roundCorrect = 0;
       setTimeout(() => {
-        roundResult.classList.add('hidden');
+        roundResult.classList.add("hidden");
         nextQuestion();
       }, 1500);
       return;
@@ -75,15 +75,15 @@ function nextQuestion() {
 }
 
 function generateButtons(correctColor) {
-  colorButtons.innerHTML = '';
+  colorButtons.innerHTML = "";
   const shuffled = [...colors].sort(() => 0.5 - Math.random());
-  shuffled.forEach(color => {
-    const btn = document.createElement('button');
+  shuffled.forEach((color) => {
+    const btn = document.createElement("button");
     btn.textContent = color;
-    btn.className = 'btn';
+    btn.className = "btn";
     btn.style.backgroundColor = color;
-    btn.style.color = 'white';
-    btn.addEventListener('click', () => handleAnswer(color, correctColor));
+    btn.style.color = "white";
+    btn.addEventListener("click", () => handleAnswer(color, correctColor));
     colorButtons.appendChild(btn);
   });
 }
@@ -106,24 +106,24 @@ function handleAnswer(selected, actual) {
 }
 
 function showRoundFeedback() {
-  roundResult.classList.remove('hidden');
+  roundResult.classList.remove("hidden");
   if (roundCorrect === questionsPerRound) {
     roundResult.textContent = `Perfect! ${questionsPerRound}/5 correct`;
-    roundResult.className = 'round-result success';
+    roundResult.className = "round-result success";
   } else if (roundCorrect >= 3) {
     roundResult.textContent = `Great job! ${roundCorrect}/${questionsPerRound} correct`;
-    roundResult.className = 'round-result success';
+    roundResult.className = "round-result success";
   } else {
     roundResult.textContent = `Keep practicing! Only ${roundCorrect}/${questionsPerRound} correct`;
-    roundResult.className = 'round-result error';
+    roundResult.className = "round-result error";
   }
 }
 
 function showFinalResult() {
-  stroopWord.textContent = '';
-  colorButtons.innerHTML = '';
-  finalResult.classList.remove('hidden');
-  startBtn.style.display = 'inline-block';
+  stroopWord.textContent = "";
+  colorButtons.innerHTML = "";
+  finalResult.classList.remove("hidden");
+  startBtn.style.display = "inline-block";
 
   const avgTime = correct ? (totalReactionTime / correct / 1000).toFixed(2) : 0;
 
@@ -142,8 +142,12 @@ function showFinalResult() {
       accuracy: correct / Math.max(1, correct + wrong),
       avgReactionMs: Math.round(Number(avgTime) * 1000),
     };
-    window.parent && window.parent.postMessage({ type: 'mentalcure:result', gameId: 'fifth', payload }, '*');
+    window.parent &&
+      window.parent.postMessage(
+        { type: "mentalcure:result", gameId: "fifth", payload },
+        "*"
+      );
   } catch (e) {
-    console.warn('Failed to postMessage result:', e);
+    console.warn("Failed to postMessage result:", e);
   }
 }

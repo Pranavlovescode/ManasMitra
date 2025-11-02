@@ -1,38 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Word Completion</title>
-  <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-  <div class="game-container">
-    <div class="header">
-      <h1>Word Completion</h1>
-      <div class="game-info">
-        <div>Round: <span id="round">1</span>/5</div>
-        <div>Score: <span id="score">0</span></div>
-        <div>Time: <span id="time">30</span>s</div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Word Completion</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="game-container">
+      <div class="header">
+        <h1>Word Completion</h1>
+        <div class="game-info">
+          <div>Round: <span id="round">1</span>/5</div>
+          <div>Score: <span id="score">0</span></div>
+          <div>Time: <span id="time">30</span>s</div>
+        </div>
+      </div>
+
+      <div class="game-area">
+        <div id="fill-word" class="word"></div>
+        <input id="answer-input" placeholder="Type your answer" />
+        <div class="buttons">
+          <button id="skip-btn" class="btn">Skip</button>
+          <button id="next-btn" class="btn hidden">Next</button>
+        </div>
+      </div>
+
+      <div id="result-box" class="hidden">
+        <h2>Results</h2>
+        <p>Your final score: <span id="final-score">0</span></p>
+        <button id="restart-btn" class="btn">Restart</button>
       </div>
     </div>
 
-    <div class="game-area">
-      <div id="fill-word" class="word"></div>
-      <input id="answer-input" placeholder="Type your answer" />
-      <div class="buttons">
-        <button id="skip-btn" class="btn">Skip</button>
-        <button id="next-btn" class="btn hidden">Next</button>
-      </div>
-    </div>
-
-    <div id="result-box" class="hidden">
-      <h2>Results</h2>
-      <p>Your final score: <span id="final-score">0</span></p>
-      <button id="restart-btn" class="btn">Restart</button>
-    </div>
-  </div>
-
-  <script src="script.js"></script>
-</body>
+    <script src="script.js"></script>
+  </body>
 </html>

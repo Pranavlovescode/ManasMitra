@@ -1,18 +1,18 @@
-document.addEventListener('DOMContentLoaded', () => {
-  const startBtn = document.getElementById('start-btn');
-  const restartBtn = document.getElementById('restart-btn');
-  const gameBoard = document.getElementById('game-board');
-  const targetShape = document.getElementById('target-shape');
-  const timeDisplay = document.getElementById('time');
-  const scoreDisplay = document.getElementById('score');
-  const roundDisplay = document.getElementById('round');
-  const roundResult = document.getElementById('round-result');
-  const gameOverScreen = document.getElementById('game-over');
-  const finalScoreDisplay = document.getElementById('final-score');
-  const performanceElement = document.querySelector('.performance');
-  const finalRightClicksSpan = document.getElementById('final-right-clicks');
-  const finalWrongClicksSpan = document.getElementById('final-wrong-clicks');
-  const finalReactionTimeSpan = document.getElementById('final-reaction-time');
+document.addEventListener("DOMContentLoaded", () => {
+  const startBtn = document.getElementById("start-btn");
+  const restartBtn = document.getElementById("restart-btn");
+  const gameBoard = document.getElementById("game-board");
+  const targetShape = document.getElementById("target-shape");
+  const timeDisplay = document.getElementById("time");
+  const scoreDisplay = document.getElementById("score");
+  const roundDisplay = document.getElementById("round");
+  const roundResult = document.getElementById("round-result");
+  const gameOverScreen = document.getElementById("game-over");
+  const finalScoreDisplay = document.getElementById("final-score");
+  const performanceElement = document.querySelector(".performance");
+  const finalRightClicksSpan = document.getElementById("final-right-clicks");
+  const finalWrongClicksSpan = document.getElementById("final-wrong-clicks");
+  const finalReactionTimeSpan = document.getElementById("final-reaction-time");
 
   let score = 0;
   let currentRound = 0;
@@ -29,18 +29,25 @@ document.addEventListener('DOMContentLoaded', () => {
   let reactionTimes = [];
   let clickStartTime = 0;
 
-  const shapeTypes = ['circle', 'square', 'triangle', 'diamond'];
-  const colors = ['#FF5252', '#4CAF50', '#2196F3', '#FFC107', '#9C27B0', '#00BCD4'];
+  const shapeTypes = ["circle", "square", "triangle", "diamond"];
+  const colors = [
+    "#FF5252",
+    "#4CAF50",
+    "#2196F3",
+    "#FFC107",
+    "#9C27B0",
+    "#00BCD4",
+  ];
   const emojis = {
-    circle: '●',
-    square: '■',
-    triangle: '▲',
-    diamond: '◆'
+    circle: "●",
+    square: "■",
+    triangle: "▲",
+    diamond: "◆",
   };
   const ROUND_TIMES = [14, 13, 12, 11, 10];
 
-  startBtn.addEventListener('click', startGame);
-  restartBtn.addEventListener('click', startGame);
+  startBtn.addEventListener("click", startGame);
+  restartBtn.addEventListener("click", startGame);
 
   function startGame() {
     score = 0;
@@ -51,9 +58,9 @@ document.addEventListener('DOMContentLoaded', () => {
     clearInterval(timerInterval);
     updateScore();
 
-    gameOverScreen.classList.add('hidden');
-    startBtn.classList.add('hidden');
-    roundResult.classList.add('hidden');
+    gameOverScreen.classList.add("hidden");
+    startBtn.classList.add("hidden");
+    roundResult.classList.add("hidden");
 
     startRound();
   }
@@ -89,11 +96,11 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateTimerDisplay() {
     timeDisplay.textContent = timeLeft;
     if (timeLeft <= 5) {
-      timeDisplay.style.color = '#d63031';
-      timeDisplay.style.animation = 'pulse 0.5s infinite alternate';
+      timeDisplay.style.color = "#d63031";
+      timeDisplay.style.animation = "pulse 0.5s infinite alternate";
     } else {
-      timeDisplay.style.color = '';
-      timeDisplay.style.animation = '';
+      timeDisplay.style.color = "";
+      timeDisplay.style.animation = "";
     }
   }
 
@@ -103,12 +110,12 @@ document.addEventListener('DOMContentLoaded', () => {
     target = { shape, color };
 
     targetShape.textContent = emojis[shape];
-    targetShape.className = 'target-example ' + shape;
+    targetShape.className = "target-example " + shape;
     targetShape.style.backgroundColor = color;
   }
 
   function generateBoard() {
-    gameBoard.innerHTML = '';
+    gameBoard.innerHTML = "";
     shapes = [];
     targetsInRound = Math.floor(Math.random() * 3) + 3;
 
@@ -134,12 +141,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     shapes = shuffleArray(shapes);
     shapes.forEach((shape, index) => {
-      const el = document.createElement('div');
+      const el = document.createElement("div");
       el.className = `shape ${shape.shape}`;
       el.style.backgroundColor = shape.color;
       el.innerHTML = emojis[shape.shape];
       el.dataset.index = index;
-      el.addEventListener('click', handleShapeClick);
+      el.addEventListener("click", handleShapeClick);
       gameBoard.appendChild(el);
     });
 
@@ -164,7 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (shape.isTarget) {
       rightClicks++;
       shape.found = true;
-      el.classList.add('correct');
+      el.classList.add("correct");
       score++;
       targetsFound++;
       updateScore();
@@ -177,8 +184,8 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       wrongClicks++;
       score = Math.max(0, score - 1);
-      el.classList.add('incorrect');
-      setTimeout(() => el.classList.remove('incorrect'), 500);
+      el.classList.add("incorrect");
+      setTimeout(() => el.classList.remove("incorrect"), 500);
       updateScore();
     }
   }
@@ -190,15 +197,15 @@ document.addEventListener('DOMContentLoaded', () => {
   function endRound(success) {
     roundActive = false;
 
-    roundResult.classList.remove('hidden');
-    roundResult.classList.toggle('success', success);
-    roundResult.classList.toggle('error', !success);
+    roundResult.classList.remove("hidden");
+    roundResult.classList.toggle("success", success);
+    roundResult.classList.toggle("error", !success);
     roundResult.textContent = success
       ? `Great! You found all targets in Round ${currentRound}.`
       : `Time's up! You found ${targetsFound} of ${targetsInRound} targets.`;
 
     setTimeout(() => {
-      roundResult.classList.add('hidden');
+      roundResult.classList.add("hidden");
       if (currentRound < ROUND_TIMES.length) {
         startRound();
       } else {
@@ -209,26 +216,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function endGame() {
     clearInterval(timerInterval);
-    gameBoard.innerHTML = '';
-    gameOverScreen.classList.remove('hidden');
+    gameBoard.innerHTML = "";
+    gameOverScreen.classList.remove("hidden");
     finalScoreDisplay.textContent = score;
 
     finalRightClicksSpan.textContent = rightClicks;
     finalWrongClicksSpan.textContent = wrongClicks;
 
-    let avgReaction = '-';
+    let avgReaction = "-";
     if (reactionTimes.length > 0) {
-      avgReaction = Math.round(reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length);
+      avgReaction = Math.round(
+        reactionTimes.reduce((a, b) => a + b, 0) / reactionTimes.length
+      );
       finalReactionTimeSpan.textContent = `${avgReaction} ms`;
     } else {
-      finalReactionTimeSpan.textContent = '-';
+      finalReactionTimeSpan.textContent = "-";
     }
 
     const accuracy = rightClicks / (rightClicks + wrongClicks + 1e-5);
-    let performanceMsg = '';
-    if (score >= 45 && accuracy >= 0.85) performanceMsg = 'Excellent!';
-    else if (score >= 30) performanceMsg = 'Good Job!';
-    else performanceMsg = 'Keep Practicing!';
+    let performanceMsg = "";
+    if (score >= 45 && accuracy >= 0.85) performanceMsg = "Excellent!";
+    else if (score >= 30) performanceMsg = "Good Job!";
+    else performanceMsg = "Keep Practicing!";
     performanceElement.textContent = performanceMsg;
 
     // Emit result to parent wrapper for persistence
@@ -238,12 +247,16 @@ document.addEventListener('DOMContentLoaded', () => {
         rightClicks,
         wrongClicks,
         accuracy,
-        avgReactionMs: avgReaction === '-' ? null : Number(avgReaction),
+        avgReactionMs: avgReaction === "-" ? null : Number(avgReaction),
         reactionTimes,
       };
-      window.parent && window.parent.postMessage({ type: 'mentalcure:result', gameId: 'first', payload }, '*');
+      window.parent &&
+        window.parent.postMessage(
+          { type: "mentalcure:result", gameId: "first", payload },
+          "*"
+        );
     } catch (e) {
-      console.warn('Failed to postMessage result:', e);
+      console.warn("Failed to postMessage result:", e);
     }
   }
 

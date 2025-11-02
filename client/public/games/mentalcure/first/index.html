@@ -1,61 +1,71 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Perception Test</title>
-    <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-</head>
-<body>
+    <link rel="stylesheet" href="styles.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
     <header>
-        <img src="logo.png" alt="Mind Logo" class="site-logo">
-        <h1 class="site-title">Mental Cure</h1>
-      </header>
+      <img src="logo.png" alt="Mind Logo" class="site-logo" />
+      <h1 class="site-title">Mental Cure</h1>
+    </header>
     <div class="game-container">
-        <div class="header">
-            <h1>Perception Test</h1>
-            <div class="game-info">
-                <div class="timer">
-                    <span>Time:</span>
-                    <span id="time">14</span>s
-                </div>
-                <div class="score">
-                    <span>Score:</span>
-                    <span id="score">0</span>
-                </div>
-                <div class="round">
-                    <span>Round:</span>
-                    <span id="round">1</span>/5
-                </div>
-            </div>
+      <div class="header">
+        <h1>Perception Test</h1>
+        <div class="game-info">
+          <div class="timer">
+            <span>Time:</span>
+            <span id="time">14</span>s
+          </div>
+          <div class="score">
+            <span>Score:</span>
+            <span id="score">0</span>
+          </div>
+          <div class="round">
+            <span>Round:</span>
+            <span id="round">1</span>/5
+          </div>
         </div>
+      </div>
 
-        <div class="game-area">
-            <div class="target-instruction">
-                Find all: <span id="target-shape" class="target-example"></span>
-            </div>
-            <div id="game-board" class="game-board"></div>
+      <div class="game-area">
+        <div class="target-instruction">
+          Find all: <span id="target-shape" class="target-example"></span>
         </div>
+        <div id="game-board" class="game-board"></div>
+      </div>
 
-        <div class="controls">
-            <button id="start-btn" class="btn">Begin Test</button>
-            <div id="round-result" class="round-result hidden"></div>
-        </div>
+      <div class="controls">
+        <button id="start-btn" class="btn">Begin Test</button>
+        <div id="round-result" class="round-result hidden"></div>
+      </div>
     </div>
 
     <div id="game-over" class="game-over hidden">
-        <h2>Test Complete!</h2>
-        <p>Your final score: <span id="final-score">0</span></p>
-        <p class="performance"></p>
-        <div class="final-stats">
-            <p><strong>Right Clicks:</strong> <span id="final-right-clicks">0</span></p>
-            <p><strong>Wrong Clicks:</strong> <span id="final-wrong-clicks">0</span></p>
-            <p><strong>Avg. Reaction Time:</strong> <span id="final-reaction-time">-</span></p>
-          </div>
-          <button id="restart-btn" class="btn">Try Again</button>
+      <h2>Test Complete!</h2>
+      <p>Your final score: <span id="final-score">0</span></p>
+      <p class="performance"></p>
+      <div class="final-stats">
+        <p>
+          <strong>Right Clicks:</strong> <span id="final-right-clicks">0</span>
+        </p>
+        <p>
+          <strong>Wrong Clicks:</strong> <span id="final-wrong-clicks">0</span>
+        </p>
+        <p>
+          <strong>Avg. Reaction Time:</strong>
+          <span id="final-reaction-time">-</span>
+        </p>
+      </div>
+      <button id="restart-btn" class="btn">Try Again</button>
     </div>
 
     <script src="script.js"></script>
-</body>
+  </body>
 </html>

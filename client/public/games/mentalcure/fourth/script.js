@@ -1,6 +1,6 @@
 const rounds = 5;
 const baseTime = 20;
-const letters = ['S', 'A', 'T', 'R', 'D'];
+const letters = ["S", "A", "T", "R", "D"];
 
 let currentRound = 0;
 let timer;
@@ -14,35 +14,35 @@ let totalReactionTime = 0;
 let roundWordsEntered = 0;
 let roundStartTime = 0;
 
-const startBtn = document.getElementById('start-btn');
-const timeEl = document.getElementById('time');
-const scoreEl = document.getElementById('score');
-const roundEl = document.getElementById('round');
-const targetLetterEl = document.getElementById('target-letter');
-const wordInput = document.getElementById('word-input');
-const wordsList = document.getElementById('words-list');
-const finalResult = document.getElementById('final-result');
-const roundFeedback = document.querySelector('.round-result');
+const startBtn = document.getElementById("start-btn");
+const timeEl = document.getElementById("time");
+const scoreEl = document.getElementById("score");
+const roundEl = document.getElementById("round");
+const targetLetterEl = document.getElementById("target-letter");
+const wordInput = document.getElementById("word-input");
+const wordsList = document.getElementById("words-list");
+const finalResult = document.getElementById("final-result");
+const roundFeedback = document.querySelector(".round-result");
 
-startBtn.addEventListener('click', () => {
-  startBtn.style.display = 'none';
+startBtn.addEventListener("click", () => {
+  startBtn.style.display = "none";
   currentRound = 0;
   score = 0;
   roundScore = 0;
   totalWordsEntered = 0;
   totalReactionTime = 0;
   usedWords.clear();
-  finalResult.classList.add('hidden');
-  roundFeedback.classList.add('hidden');
-  wordsList.innerHTML = '';
-  wordInput.value = '';
+  finalResult.classList.add("hidden");
+  roundFeedback.classList.add("hidden");
+  wordsList.innerHTML = "";
+  wordInput.value = "";
   wordInput.disabled = false;
   wordInput.focus();
   nextRound();
 });
 
 function nextRound() {
-  roundFeedback.classList.add('hidden');
+  roundFeedback.classList.add("hidden");
   if (roundStartTime !== 0 && roundWordsEntered > 0) {
     const roundDuration = Date.now() - roundStartTime;
     totalReactionTime += roundDuration / roundWordsEntered;
@@ -58,8 +58,8 @@ function nextRound() {
   timeLeft = timeForRound;
   timeEl.textContent = timeLeft;
   targetLetterEl.textContent = letters[currentRound - 1];
-  wordInput.value = '';
-  wordsList.innerHTML = '';
+  wordInput.value = "";
+  wordsList.innerHTML = "";
   usedWords.clear();
   wordInput.disabled = false;
   wordInput.focus();
@@ -84,11 +84,14 @@ async function isValidWordAPI(word) {
   if (word.length < 2) return false;
   const lowerWord = word.toLowerCase();
   if (usedWords.has(lowerWord)) return false;
-  if (!lowerWord.startsWith(targetLetterEl.textContent.toLowerCase())) return false;
+  if (!lowerWord.startsWith(targetLetterEl.textContent.toLowerCase()))
+    return false;
   const firstChar = lowerWord[0];
-  if ([...lowerWord].every(ch => ch === firstChar)) return false;
+  if ([...lowerWord].every((ch) => ch === firstChar)) return false;
   try {
-    const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${lowerWord}`);
+    const response = await fetch(
+      `https://api.dictionaryapi.dev/api/v2/entries/en/${lowerWord}`
+    );
     if (response.ok) {
       const data = await response.json();
       return Array.isArray(data) && data.length > 0;
@@ -100,8 +103,8 @@ async function isValidWordAPI(word) {
   }
 }
 
-wordInput.addEventListener('keydown', async (e) => {
-  if (e.key === ' ') {
+wordInput.addEventListener("keydown", async (e) => {
+  if (e.key === " ") {
     e.preventDefault();
     const word = wordInput.value.trim();
     if (!word) return;
@@ -117,17 +120,17 @@ wordInput.addEventListener('keydown', async (e) => {
         score++;
         roundScore++;
         scoreEl.textContent = score;
-        const span = document.createElement('span');
+        const span = document.createElement("span");
         span.textContent = word;
         wordsList.appendChild(span);
       }
     }
-    wordInput.value = '';
+    wordInput.value = "";
   }
 });
 
 function showRoundFeedback() {
-  let feedbackText = '';
+  let feedbackText = "";
   if (roundScore === roundWordsEntered && roundWordsEntered > 0) {
     feedbackText = `Perfect! You got all ${roundWordsEntered} correct! 🎉`;
   } else if (roundScore >= roundWordsEntered / 2) {
@@ -136,7 +139,7 @@ function showRoundFeedback() {
     feedbackText = `Keep trying! ${roundScore} correct out of ${roundWordsEntered}`;
   }
   roundFeedback.textContent = feedbackText;
-  roundFeedback.classList.remove('hidden');
+  roundFeedback.classList.remove("hidden");
 }
 
 function endGame() {
@@ -145,20 +148,24 @@ function endGame() {
     totalReactionTime += roundDuration / roundWordsEntered;
   }
 
-  const avgReaction = totalWordsEntered ? (totalReactionTime / totalWordsEntered) : 0;
+  const avgReaction = totalWordsEntered
+    ? totalReactionTime / totalWordsEntered
+    : 0;
 
   finalResult.innerHTML = `
       <h2>Test Complete!</h2>
       <p><strong>Total correct words:</strong> ${score}</p>
       <p><strong>Total words entered:</strong> ${totalWordsEntered}</p>
-      <p><strong>Average reaction time per word:</strong> ${avgReaction.toFixed(2)} seconds</p>
+      <p><strong>Average reaction time per word:</strong> ${avgReaction.toFixed(
+        2
+      )} seconds</p>
   `;
-  finalResult.classList.remove('hidden');
-  startBtn.style.display = 'inline-block';
+  finalResult.classList.remove("hidden");
+  startBtn.style.display = "inline-block";
   startBtn.disabled = false;
-  targetLetterEl.textContent = '-';
+  targetLetterEl.textContent = "-";
   wordInput.disabled = true;
-  roundFeedback.classList.add('hidden');
+  roundFeedback.classList.add("hidden");
 
   try {
     const payload = {
@@ -166,8 +173,12 @@ function endGame() {
       totalAttempts: totalWordsEntered,
       avgReactionMs: Math.round(avgReaction * 1000),
     };
-    window.parent && window.parent.postMessage({ type: 'mentalcure:result', gameId: 'fourth', payload }, '*');
+    window.parent &&
+      window.parent.postMessage(
+        { type: "mentalcure:result", gameId: "fourth", payload },
+        "*"
+      );
   } catch (e) {
-    console.warn('Failed to postMessage result:', e);
+    console.warn("Failed to postMessage result:", e);
   }
 }

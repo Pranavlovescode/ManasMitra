@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const GameResultSchema = new mongoose.Schema(
   {
@@ -6,7 +6,7 @@ const GameResultSchema = new mongoose.Schema(
     gameId: {
       type: String,
       required: true,
-      enum: ['first', 'second', 'third_test', 'fourth', 'fifth', 'sixth'],
+      enum: ["first", "second", "third_test", "fourth", "fifth", "sixth"],
       index: true,
     },
     score: { type: Number, default: 0 },
@@ -26,4 +26,5 @@ const GameResultSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export default mongoose.models.GameResult || mongoose.model('GameResult', GameResultSchema);
+export default mongoose.models.GameResult ||
+  mongoose.model("GameResult", GameResultSchema);

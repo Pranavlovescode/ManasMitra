@@ -1,37 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Attention Count</title>
-  <link rel="stylesheet" href="styles.css" />
-</head>
-<body>
-  <div class="game-container">
-    <div class="header">
-      <h1>Attention Count</h1>
-      <div class="game-info">
-        <div class="timer">Time: <span id="time">10</span>s</div>
-        <div class="score">Score: <span id="score">0</span></div>
-        <div class="round">Round: <span id="round">1</span>/3</div>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Attention Count</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="game-container">
+      <div class="header">
+        <h1>Attention Count</h1>
+        <div class="game-info">
+          <div class="timer">Time: <span id="time">10</span>s</div>
+          <div class="score">Score: <span id="score">0</span></div>
+          <div class="round">Round: <span id="round">1</span>/3</div>
+        </div>
+        <div class="target">Target: <span id="target-name"></span></div>
       </div>
-      <div class="target">Target: <span id="target-name"></span></div>
-    </div>
 
-    <div id="game-board" class="game-board"></div>
+      <div id="game-board" class="game-board"></div>
 
-    <div class="controls">
-      <button id="start-btn" class="btn">Start</button>
-      <div id="round-result" class="round-result hidden"></div>
-    </div>
+      <div class="controls">
+        <button id="start-btn" class="btn">Start</button>
+        <div id="round-result" class="round-result hidden"></div>
+      </div>
 
-    <div id="game-over" class="game-over hidden">
-      <h2>Test Complete!</h2>
-      <p>Your final score: <span id="final-score">0</span></p>
-      <p class="performance"></p>
-      <button id="restart-btn" class="btn">Try Again</button>
+      <div id="game-over" class="game-over hidden">
+        <h2>Test Complete!</h2>
+        <p>Your final score: <span id="final-score">0</span></p>
+        <p class="performance"></p>
+        <button id="restart-btn" class="btn">Try Again</button>
+      </div>
     </div>
-  </div>
-  <script src="script.js"></script>
-</body>
+    <script src="script.js"></script>
+  </body>
 </html>
