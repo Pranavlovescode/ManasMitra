@@ -12,7 +12,14 @@ import {
 import { Input } from "../ui/input";
 import { Badge } from "../ui/badge";
 import { Textarea } from "../ui/textarea";
-import { Calendar, Clock, User, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  User,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+} from "lucide-react";
 
 export default function AppointmentBooking({ userId }) {
   const [appointments, setAppointments] = useState([]);
@@ -38,7 +45,9 @@ export default function AppointmentBooking({ userId }) {
 
   const checkAssignedTherapist = async () => {
     try {
-      const response = await fetch('/api/patients/therapist', { cache: 'no-store' });
+      const response = await fetch("/api/patients/therapist", {
+        cache: "no-store",
+      });
       const raw = await response.text();
       let data = {};
       try {
@@ -47,15 +56,21 @@ export default function AppointmentBooking({ userId }) {
         data = { raw };
       }
 
-      console.log('Assigned therapist check response:', { status: response.status, data });
+      console.log("Assigned therapist check response:", {
+        status: response.status,
+        data,
+      });
 
-      if (response.ok && typeof data?.hasAssignedTherapist === 'boolean') {
+      if (response.ok && typeof data?.hasAssignedTherapist === "boolean") {
         setHasAssignedTherapist(data.hasAssignedTherapist);
       } else if (response.status === 401) {
-        console.error('Unauthorized while checking assigned therapist');
+        console.error("Unauthorized while checking assigned therapist");
         setHasAssignedTherapist(false);
       } else {
-        console.error('API Error (patients/therapist):', { status: response.status, data });
+        console.error("API Error (patients/therapist):", {
+          status: response.status,
+          data,
+        });
         setHasAssignedTherapist(false);
       }
     } catch (error) {
@@ -79,7 +94,9 @@ export default function AppointmentBooking({ userId }) {
   const fetchTherapists = async () => {
     setLoadingTherapists(true);
     try {
-      const response = await fetch('/api/patients/therapist', { cache: 'no-store' });
+      const response = await fetch("/api/patients/therapist", {
+        cache: "no-store",
+      });
       const raw = await response.text();
       let data = {};
       try {
@@ -88,7 +105,10 @@ export default function AppointmentBooking({ userId }) {
         data = { raw };
       }
 
-      console.log('Fetch therapists response:', { status: response.status, data });
+      console.log("Fetch therapists response:", {
+        status: response.status,
+        data,
+      });
 
       if (response.ok) {
         // The API returns { hasAssignedTherapist: boolean, therapist: {...} }
@@ -100,13 +120,17 @@ export default function AppointmentBooking({ userId }) {
           setSelectedTherapist(data.therapist);
           setHasAssignedTherapist(true);
         } else {
-          console.log('No assigned therapist found or invalid data:', data);
+          console.log("No assigned therapist found or invalid data:", data);
           setTherapists([]);
           setSelectedTherapist(null);
           setHasAssignedTherapist(false);
         }
       } else {
-        console.error("Failed to fetch assigned therapist: API returned error status", response.status, data);
+        console.error(
+          "Failed to fetch assigned therapist: API returned error status",
+          response.status,
+          data
+        );
         setTherapists([]);
         setHasAssignedTherapist(false);
       }
@@ -138,7 +162,7 @@ export default function AppointmentBooking({ userId }) {
 
     try {
       const scheduledDateTime = new Date(`${selectedDate}T${selectedTime}`);
-      
+
       const response = await fetch("/api/appointments", {
         method: "POST",
         headers: {
@@ -146,7 +170,8 @@ export default function AppointmentBooking({ userId }) {
         },
         body: JSON.stringify({
           // Prefer Therapist document id if provided; fallback to User id
-          therapistId: selectedTherapist.therapistDocId || selectedTherapist._id,
+          therapistId:
+            selectedTherapist.therapistDocId || selectedTherapist._id,
           scheduledAt: scheduledDateTime.toISOString(),
           type: sessionType,
           duration: duration,
@@ -156,7 +181,9 @@ export default function AppointmentBooking({ userId }) {
       });
 
       if (response.ok) {
-        alert("Appointment request sent successfully! Waiting for therapist approval.");
+        alert(
+          "Appointment request sent successfully! Waiting for therapist approval."
+        );
         setShowBooking(false);
         setSelectedTherapist(null);
         setSelectedDate("");
@@ -177,22 +204,33 @@ export default function AppointmentBooking({ userId }) {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'accepted': return 'bg-green-100 text-green-800';
-      case 'declined': return 'bg-red-100 text-red-800';
-      case 'completed': return 'bg-blue-100 text-blue-800';
-      case 'cancelled': return 'bg-gray-100 text-gray-800';
-      case 'rescheduled': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "accepted":
+        return "bg-green-100 text-green-800";
+      case "declined":
+        return "bg-red-100 text-red-800";
+      case "completed":
+        return "bg-blue-100 text-blue-800";
+      case "cancelled":
+        return "bg-gray-100 text-gray-800";
+      case "rescheduled":
+        return "bg-purple-100 text-purple-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getStatusIcon = (status) => {
     switch (status) {
-      case 'accepted': return <CheckCircle className="w-4 h-4" />;
-      case 'declined': return <XCircle className="w-4 h-4" />;
-      case 'pending': return <AlertCircle className="w-4 h-4" />;
-      default: return null;
+      case "accepted":
+        return <CheckCircle className="w-4 h-4" />;
+      case "declined":
+        return <XCircle className="w-4 h-4" />;
+      case "pending":
+        return <AlertCircle className="w-4 h-4" />;
+      default:
+        return null;
     }
   };
 
@@ -203,41 +241,40 @@ export default function AppointmentBooking({ userId }) {
           <CardHeader>
             <CardTitle>Book an Appointment</CardTitle>
             <CardDescription>
-              {hasAssignedTherapist === null 
-                ? "Checking therapist assignment..." 
-                : hasAssignedTherapist 
+              {hasAssignedTherapist === null
+                ? "Checking therapist assignment..."
+                : hasAssignedTherapist
                 ? "Schedule a therapy session with your assigned therapist"
-                : "You need to be assigned to a therapist before booking appointments"
-              }
+                : "You need to be assigned to a therapist before booking appointments"}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button 
-              onClick={handleShowBooking} 
+            <Button
+              onClick={handleShowBooking}
               className="w-full"
               disabled={hasAssignedTherapist !== true}
             >
-              {hasAssignedTherapist === null 
-                ? "Loading..." 
-                : hasAssignedTherapist 
+              {hasAssignedTherapist === null
+                ? "Loading..."
+                : hasAssignedTherapist
                 ? "Book New Appointment"
-                : "No Therapist Assigned"
-              }
+                : "No Therapist Assigned"}
             </Button>
             {hasAssignedTherapist === false && (
               <div className="mt-3">
                 <p className="text-sm text-gray-600 text-center mb-2">
-                  Please contact support to get assigned to a therapist before booking appointments.
+                  Please contact support to get assigned to a therapist before
+                  booking appointments.
                 </p>
                 <Button
                   onClick={async () => {
                     try {
-                      const response = await fetch('/api/debug-patient');
+                      const response = await fetch("/api/debug-patient");
                       const data = await response.json();
-                      console.log('Debug patient data:', data);
-                      alert('Check console for debug information');
+                      console.log("Debug patient data:", data);
+                      alert("Check console for debug information");
                     } catch (error) {
-                      console.error('Debug failed:', error);
+                      console.error("Debug failed:", error);
                     }
                   }}
                   variant="outline"
@@ -254,23 +291,34 @@ export default function AppointmentBooking({ userId }) {
         <Card>
           <CardHeader>
             <CardTitle>Schedule Your Session</CardTitle>
-            <CardDescription>Book an appointment with your assigned therapist</CardDescription>
+            <CardDescription>
+              Book an appointment with your assigned therapist
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Therapist Selection */}
             <div className="space-y-3">
-              <label className="text-sm font-medium">Your Assigned Therapist</label>
+              <label className="text-sm font-medium">
+                Your Assigned Therapist
+              </label>
               {therapists.length === 1 && selectedTherapist && (
                 <p className="text-xs text-gray-600 mb-2">
-                  Your assigned therapist is automatically selected. Proceed to choose your appointment time.
+                  Your assigned therapist is automatically selected. Proceed to
+                  choose your appointment time.
                 </p>
               )}
               {loadingTherapists ? (
-                <div className="text-center py-4 text-gray-500">Loading your assigned therapist...</div>
+                <div className="text-center py-4 text-gray-500">
+                  Loading your assigned therapist...
+                </div>
               ) : !Array.isArray(therapists) || therapists.length === 0 ? (
                 <div className="text-center py-4 text-gray-500">
-                  <p className="mb-2">No therapist assigned to your account yet.</p>
-                  <p className="text-sm">Please contact support to get assigned to a therapist.</p>
+                  <p className="mb-2">
+                    No therapist assigned to your account yet.
+                  </p>
+                  <p className="text-sm">
+                    Please contact support to get assigned to a therapist.
+                  </p>
                 </div>
               ) : (
                 <div className="grid gap-3 max-h-64 overflow-y-auto">
@@ -279,8 +327,8 @@ export default function AppointmentBooking({ userId }) {
                       key={therapist._id}
                       className={`p-4 border-2 rounded-lg transition-all ${
                         selectedTherapist?._id === therapist._id
-                          ? 'border-indigo-600 bg-indigo-50'
-                          : 'border-gray-200'
+                          ? "border-indigo-600 bg-indigo-50"
+                          : "border-gray-200"
                       }`}
                     >
                       <div className="flex items-start justify-between">
@@ -288,11 +336,16 @@ export default function AppointmentBooking({ userId }) {
                           <div className="flex items-center gap-2 mb-1">
                             <User className="w-4 h-4 text-gray-500" />
                             <p className="font-semibold">{therapist.name}</p>
-                            <Badge variant="outline" className="text-xs text-indigo-600 border-indigo-300">
+                            <Badge
+                              variant="outline"
+                              className="text-xs text-indigo-600 border-indigo-300"
+                            >
                               Assigned Therapist
                             </Badge>
                           </div>
-                          <p className="text-sm text-gray-600 mt-1">{therapist.email}</p>
+                          <p className="text-sm text-gray-600 mt-1">
+                            {therapist.email}
+                          </p>
                           {therapist.yearsOfExperience > 0 && (
                             <p className="text-sm text-gray-500 mt-1">
                               {therapist.yearsOfExperience} years experience
@@ -300,11 +353,17 @@ export default function AppointmentBooking({ userId }) {
                           )}
                           {therapist.specializations?.length > 0 && (
                             <div className="flex flex-wrap gap-1 mt-2">
-                              {therapist.specializations.slice(0, 3).map((spec, idx) => (
-                                <Badge key={idx} variant="secondary" className="text-xs">
-                                  {spec}
-                                </Badge>
-                              ))}
+                              {therapist.specializations
+                                .slice(0, 3)
+                                .map((spec, idx) => (
+                                  <Badge
+                                    key={idx}
+                                    variant="secondary"
+                                    className="text-xs"
+                                  >
+                                    {spec}
+                                  </Badge>
+                                ))}
                             </div>
                           )}
                         </div>
@@ -390,7 +449,7 @@ export default function AppointmentBooking({ userId }) {
                       type="date"
                       value={selectedDate}
                       onChange={(e) => setSelectedDate(e.target.value)}
-                      min={new Date().toISOString().split('T')[0]}
+                      min={new Date().toISOString().split("T")[0]}
                     />
                   </div>
 
@@ -409,7 +468,9 @@ export default function AppointmentBooking({ userId }) {
 
                 {/* Duration */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Preferred Duration</label>
+                  <label className="text-sm font-medium">
+                    Preferred Duration
+                  </label>
                   <select
                     value={duration}
                     onChange={(e) => setDuration(Number(e.target.value))}
@@ -424,7 +485,9 @@ export default function AppointmentBooking({ userId }) {
 
                 {/* Notes */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Notes (Optional)</label>
+                  <label className="text-sm font-medium">
+                    Notes (Optional)
+                  </label>
                   <Textarea
                     value={patientNotes}
                     onChange={(e) => setPatientNotes(e.target.value)}
@@ -462,36 +525,49 @@ export default function AppointmentBooking({ userId }) {
         <Card>
           <CardHeader>
             <CardTitle>Your Appointments</CardTitle>
-            <CardDescription>View and manage your scheduled sessions</CardDescription>
+            <CardDescription>
+              View and manage your scheduled sessions
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {appointments.map((apt) => (
-                <div key={apt._id} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div
+                  key={apt._id}
+                  className="p-4 bg-gray-50 rounded-lg border border-gray-200"
+                >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <User className="w-4 h-4 text-gray-500" />
                         <p className="font-semibold">
-                          Dr. {apt.therapistId?.userId?.firstName} {apt.therapistId?.userId?.lastName}
+                          Dr. {apt.therapistId?.userId?.firstName}{" "}
+                          {apt.therapistId?.userId?.lastName}
                         </p>
                       </div>
                       <div className="space-y-1 text-sm text-gray-600">
                         <p className="flex items-center gap-2">
                           <Calendar className="w-3 h-3" />
-                          {new Date(apt.scheduledAt).toLocaleDateString('en-US', {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric'
-                          })}
+                          {new Date(apt.scheduledAt).toLocaleDateString(
+                            "en-US",
+                            {
+                              weekday: "long",
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            }
+                          )}
                         </p>
                         <p className="flex items-center gap-2">
                           <Clock className="w-3 h-3" />
-                          {new Date(apt.scheduledAt).toLocaleTimeString('en-US', {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })} • {apt.duration} minutes
+                          {new Date(apt.scheduledAt).toLocaleTimeString(
+                            "en-US",
+                            {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            }
+                          )}{" "}
+                          • {apt.duration} minutes
                         </p>
                         <p className="capitalize">
                           {apt.type} Session • {apt.meetingType}
@@ -502,19 +578,25 @@ export default function AppointmentBooking({ userId }) {
                           Your notes: {apt.patientNotes}
                         </p>
                       )}
-                      {apt.therapistNotes && apt.status === 'declined' && (
+                      {apt.therapistNotes && apt.status === "declined" && (
                         <p className="text-sm text-red-600 mt-2">
                           Therapist note: {apt.therapistNotes}
                         </p>
                       )}
                     </div>
                     <div className="flex flex-col items-end gap-2">
-                      <Badge className={`${getStatusColor(apt.status)} flex items-center gap-1`}>
+                      <Badge
+                        className={`${getStatusColor(
+                          apt.status
+                        )} flex items-center gap-1`}
+                      >
                         {getStatusIcon(apt.status)}
                         {apt.status}
                       </Badge>
-                      {apt.status === 'pending' && (
-                        <span className="text-xs text-gray-500">Awaiting approval</span>
+                      {apt.status === "pending" && (
+                        <span className="text-xs text-gray-500">
+                          Awaiting approval
+                        </span>
                       )}
                     </div>
                   </div>

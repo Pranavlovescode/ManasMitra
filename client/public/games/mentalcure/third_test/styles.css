@@ -1,0 +1,7 @@
+.game-container{max-width:900px;margin:20px auto;background:#fff;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,0.08);padding:24px;font-family:system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial}
+.header h1{color:#6c5ce7;margin:0 0 8px}
+.board{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;background:#f7f8fc;border:1px dashed #d9def3;border-radius:12px;padding:16px;min-height:120px}
+.shape{background:#eef2ff;border-radius:8px;padding:10px;text-align:center}
+.hidden{display:none}
+.btn{background:#6c5ce7;color:#fff;border:none;border-radius:8px;padding:10px 16px;cursor:pointer}
+.round-result{margin-top:12px}

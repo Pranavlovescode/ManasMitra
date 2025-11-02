@@ -94,3 +94,60 @@ export function computeJournalTrends(journals = []) {
     },
   };
 }
+
+// Aggregate analytics for cognitive games results
+// Input: array of GameResult documents (lean objects)
+// Output: summary with per-game series and overall stats
+export function computeGameAnalytics(results = []) {
+  if (!Array.isArray(results)) return {};
+
+  const byDate = (d) => new Date(d).toISOString().slice(0, 10);
+  const perGame = {};
+
+  for (const r of results) {
+    const g = r.gameId || 'unknown';
+    if (!perGame[g]) {
+      perGame[g] = {
+        count: 0,
+        scores: [],
+        scoreSeries: [],
+        accuracySeries: [],
+        avgReactionSeries: [],
+        bestScore: -Infinity,
+        avgScore: 0,
+        avgAccuracy: 0,
+        avgReactionMs: 0,
+      };
+    }
+    const bucket = perGame[g];
+    bucket.count += 1;
+    const date = byDate(r.createdAt || r.updatedAt || Date.now());
+    const score = Number(r.score ?? 0);
+    const acc = typeof r.metrics?.accuracy === 'number' ? r.metrics.accuracy : undefined;
+    const avgMs = typeof r.metrics?.avgReactionMs === 'number' ? r.metrics.avgReactionMs : undefined;
+
+    bucket.scores.push(score);
+    bucket.scoreSeries.push({ date, score });
+    if (typeof acc === 'number') bucket.accuracySeries.push({ date, accuracy: acc });
+    if (typeof avgMs === 'number') bucket.avgReactionSeries.push({ date, avgReactionMs: avgMs });
+    if (score > bucket.bestScore) bucket.bestScore = score;
+  }
+
+  // finalize averages
+  for (const g of Object.keys(perGame)) {
+    const b = perGame[g];
+    b.avgScore = b.scores.length ? b.scores.reduce((a, v) => a + v, 0) / b.scores.length : 0;
+    const accs = b.accuracySeries.map((x) => x.accuracy);
+    b.avgAccuracy = accs.length ? accs.reduce((a, v) => a + v, 0) / accs.length : 0;
+    const rts = b.avgReactionSeries.map((x) => x.avgReactionMs);
+    b.avgReactionMs = rts.length ? rts.reduce((a, v) => a + v, 0) / rts.length : 0;
+  }
+
+  // overall trend across all games
+  const overall = {
+    totalSessions: results.length,
+    byGame: perGame,
+  };
+
+  return overall;
+}

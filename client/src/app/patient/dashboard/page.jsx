@@ -255,7 +255,7 @@ export default function PatientDashboard() {
           <CardContent className="p-8">
             <Tabs defaultValue="journal" className="space-y-6">
               <div className="flex justify-center">
-                <TabsList className="grid grid-cols-4 bg-gray-100/80 p-1 rounded-xl shadow-inner">
+                <TabsList className="grid grid-cols-5 bg-gray-100/80 p-1 rounded-xl shadow-inner">
                   <TabsTrigger 
                     value="journal"
                     className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg transition-all duration-200"  
@@ -284,6 +284,15 @@ export default function PatientDashboard() {
                     </span>
                   </TabsTrigger>
                   <TabsTrigger 
+                    value="games"
+                    className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg transition-all duration-200"
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className="text-lg">🎮</span>
+                      <span className="hidden sm:inline">Games</span>
+                    </span>
+                  </TabsTrigger>
+                  <TabsTrigger 
                     value="appointments"
                     className="data-[state=active]:bg-white data-[state=active]:shadow-sm rounded-lg transition-all duration-200"
                   >
@@ -305,6 +314,24 @@ export default function PatientDashboard() {
 
               <TabsContent value="assessment" className="space-y-4 mt-8">
                 <MultiAssessmentModule userId={user?.id} />
+              </TabsContent>
+              
+              <TabsContent value="games" className="space-y-4 mt-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <Card className="bg-linear-to-br from-indigo-50 to-purple-50 border-white/50">
+                    <CardHeader>
+                      <CardTitle>Cognitive Games</CardTitle>
+                      <CardDescription>Practice and measure perception, attention, memory, language and reflexes.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <Button onClick={() => router.push('/patient/games')} className="bg-indigo-600 hover:bg-indigo-700 text-white">Open Games</Button>
+                        <Button variant="outline" onClick={() => router.push('/patient/games?history=1')}>View My Scores</Button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-3">Your results are shared with your therapist to personalize care.</p>
+                    </CardContent>
+                  </Card>
+                </div>
               </TabsContent>
 
               <TabsContent value="appointments" className="space-y-4 mt-8">

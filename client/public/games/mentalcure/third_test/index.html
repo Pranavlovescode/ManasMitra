@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Memory Sequence</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="game-container">
+    <div class="header">
+      <h1>Memory Sequence</h1>
+      <div class="game-info">
+        <div>Time: <span id="time">10</span>s</div>
+        <div>Score: <span id="score">0</span></div>
+        <div>Round: <span id="round">1/5</span></div>
+      </div>
+    </div>
+
+    <p id="instruction-text">Memorize the order of these images:</p>
+    <div id="game-board" class="board"></div>
+
+    <div id="input-area" class="hidden">
+      <input id="user-input" type="text" placeholder="e.g., apple banana car" />
+      <button id="submit-btn" class="btn">Submit</button>
+    </div>
+
+    <div id="round-result" class="round-result hidden"></div>
+
+    <div id="final-summary" class="hidden">
+      <h2>Summary</h2>
+      <table>
+        <thead>
+          <tr><th>Round</th><th>Pattern</th><th>Your Answer</th><th>Correct</th><th>Time(s)</th></tr>
+        </thead>
+        <tbody id="summary-body"></tbody>
+      </table>
+    </div>
+
+    <button id="start-btn" class="btn">Start</button>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
