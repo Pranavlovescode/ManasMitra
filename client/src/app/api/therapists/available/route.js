@@ -28,6 +28,8 @@ export async function GET(req) {
       isActive: true 
     }).select('_id firstName lastName email');
 
+    console.log(therapists)
+
     // Get additional therapist info if available
     const therapistList = await Promise.all(therapists.map(async (therapist) => {
       const therapistDetails = await Therapist.findOne({ userId: therapist._id });
@@ -43,12 +45,15 @@ export async function GET(req) {
       };
     }));
 
+    console.log(therapistList)
     // Filter only therapists accepting new patients
-    const availableTherapists = therapistList.filter(therapist => 
-      therapist.acceptingNewPatients && therapist.verified
-    );
+    // const availableTherapists = therapistList.filter(therapist => 
+    //   therapist.acceptingNewPatients && therapist.verified
+    // );
 
-    return NextResponse.json({ therapists: availableTherapists });
+    console.log("available therapist: ",therapistList);
+
+    return NextResponse.json({ therapists: therapistList }, { status: 200 });
 
   } catch (error) {
     console.error('Error fetching available therapists:', error);

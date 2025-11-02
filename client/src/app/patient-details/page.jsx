@@ -182,11 +182,18 @@ export default function PatientDetailsPage() {
     }
   }, [currentStep, formInitialized, user, FORM_STORAGE_KEY]);
 
-  // Check if user is already a patient and redirect if needed
+  // If user has a non-patient role, redirect them to the appropriate dashboard.
+  // Allow users with role 'patient' or no role yet (new users) to stay on this page.
   useEffect(() => {
-    if (isLoaded && user && user.unsafeMetadata?.role !== 'patient') {
-      router.push('/dashboard');
+    if (!isLoaded || !user) return;
+
+    const role = user.publicMetadata?.role || user.unsafeMetadata?.role || null;
+    if (role === 'therapist') {
+      router.replace('/therapist/dashboard');
+    } else if (role === 'admin') {
+      router.replace('/admin/dashboard');
     }
+    // If role is 'patient' or undefined/null, remain on patient details page
   }, [isLoaded, user, router]);
 
   // Fetch available therapists
@@ -194,6 +201,7 @@ export default function PatientDetailsPage() {
     const fetchTherapists = async () => {
       try {
         const response = await fetch('/api/therapists/available');
+        console.log(response)
         if (response.ok) {
           const data = await response.json();
           setAvailableTherapists(data.therapists || []);

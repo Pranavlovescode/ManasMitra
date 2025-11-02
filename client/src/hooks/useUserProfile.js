@@ -36,7 +36,7 @@ export function useUserProfile() {
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await fetch('/api/users', {
         method: 'GET',
         headers: {
@@ -44,40 +44,18 @@ export function useUserProfile() {
         },
       });
 
-      try {
-        setLoading(true);
-        setError(null);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
 
-        const response = await fetch("/api/users", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-
-          if (response.status === 401) {
-            console.warn("User not authenticated. Please sign in.");
-            setError("Please sign in to continue");
-            setDbUser(null);
-            return;
-          }
-
-          console.error("Profile fetch error:", response.status, errorData);
-          throw new Error(errorData.error || "Failed to fetch user profile");
+        if (response.status === 401) {
+          console.warn('User not authenticated. Please sign in.');
+          setError('Please sign in to continue');
+          setDbUser(null);
+          return;
         }
 
-        const userData = await response.json();
-        setDbUser(userData);
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching user profile:", err);
-        setError(err.message);
-        setDbUser(null);
-      } finally {
-        setLoading(false);
+        console.error('Profile fetch error:', response.status, errorData);
+        throw new Error(errorData.error || 'Failed to fetch user profile');
       }
 
       const userData = await response.json();
