@@ -9,7 +9,7 @@ export async function GET(request) {
     
     const authData = await auth(request);
     const { userId } = authData;
-    console.log("Auth data:", authData);
+    // console.log("Auth data:", authData);
 
     if (!authData.isAuthenticated || !userId) {
       console.log("Journal GET - Not authenticated, returning 401");

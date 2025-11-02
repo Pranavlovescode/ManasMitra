@@ -62,10 +62,10 @@ const PatientSchema = new mongoose.Schema({
 
   // Medical Info (Optional)
   medicalInfo: {
-    primaryPhysician: {
-      name: String,
-      phone: String,
-      email: String,
+    assignedTherapist: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null
     },
     allergies: [String],
     currentMedications: [{
@@ -167,6 +167,7 @@ PatientSchema.methods.isMinor = function () {
 // ========================
 PatientSchema.index({ 'status.activePatient': 1 });
 PatientSchema.index({ 'status.assignedTherapist': 1 });
+PatientSchema.index({ 'medicalInfo.assignedTherapist': 1 });
 
 // ========================
 // Export

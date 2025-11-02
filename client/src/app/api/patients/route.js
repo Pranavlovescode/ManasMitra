@@ -117,6 +117,22 @@ export async function POST(req) {
       );
     }
 
+    // Validate assignedTherapist if provided
+    if (body.medicalInfo?.assignedTherapist) {
+      const therapistExists = await User.findOne({ 
+        _id: body.medicalInfo.assignedTherapist, 
+        role: 'therapist',
+        isActive: true 
+      });
+      
+      if (!therapistExists) {
+        return NextResponse.json(
+          { error: "Invalid therapist selection" },
+          { status: 400 }
+        );
+      }
+    }
+
     // Create new patient
     const patient = new Patient({
       userId: user._id,
@@ -174,6 +190,22 @@ export async function PUT(req) {
         { error: "Access denied. Only patients can update patient details." },
         { status: 403 }
       );
+    }
+
+    // Validate assignedTherapist if provided
+    if (body.medicalInfo?.assignedTherapist) {
+      const therapistExists = await User.findOne({ 
+        _id: body.medicalInfo.assignedTherapist, 
+        role: 'therapist',
+        isActive: true 
+      });
+      
+      if (!therapistExists) {
+        return NextResponse.json(
+          { error: "Invalid therapist selection" },
+          { status: 400 }
+        );
+      }
     }
 
     // Find and update patient details

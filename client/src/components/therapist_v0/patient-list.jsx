@@ -25,13 +25,11 @@ export default function PatientList({ therapistId, onSelectPatient }) {
   useEffect(() => {
     const filtered = patients.filter(
       (p) => {
-        const firstName = p.userId?.firstName || '';
-        const lastName = p.userId?.lastName || '';
-        const email = p.userId?.email || '';
+        const name = p.name || '';
+        const email = p.email || '';
         const searchLower = searchTerm.toLowerCase();
         
-        return firstName.toLowerCase().includes(searchLower) ||
-               lastName.toLowerCase().includes(searchLower) ||
+        return name.toLowerCase().includes(searchLower) ||
                email.toLowerCase().includes(searchLower);
       }
     );
@@ -40,12 +38,13 @@ export default function PatientList({ therapistId, onSelectPatient }) {
 
   const fetchPatients = async () => {
     try {
-      const res = await fetch('/api/therapists/patients');
+      const res = await fetch('/api/therapists/my-patients');
       
       if (res.ok) {
         const data = await res.json();
-        // Extract just the assigned patients or all patients
-        setPatients(data.assignedPatients || data.allPatients || []);
+        setPatients(data.patients || []);
+      } else {
+        console.error("Failed to fetch patients:", res.statusText);
       }
     } catch (error) {
       console.error("Failed to fetch patients:", error);
@@ -85,10 +84,16 @@ export default function PatientList({ therapistId, onSelectPatient }) {
               >
                 <div>
                   <p className="font-semibold">
-                    {patient.userId?.firstName} {patient.userId?.lastName}
+                    {patient.name}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {patient.userId?.email}
+                    {patient.email}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Phone: {patient.phoneNumber || 'Not provided'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Preferred: {patient.preferences?.sessionFormat || 'Not specified'}
                   </p>
                 </div>
                 <Button size="sm" onClick={() => onSelectPatient(patient._id)}>

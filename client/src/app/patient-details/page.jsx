@@ -32,6 +32,7 @@ export default function PatientDetailsPage() {
   const [lastSaved, setLastSaved] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [completionPercentage, setCompletionPercentage] = useState(0);
+  const [availableTherapists, setAvailableTherapists] = useState([]);
   const [formData, setFormData] = useState({
     personalInfo: {
       dateOfBirth: '',
@@ -180,6 +181,34 @@ export default function PatientDetailsPage() {
       localStorage.setItem(`${FORM_STORAGE_KEY}-step`, currentStep.toString());
     }
   }, [currentStep, formInitialized, user, FORM_STORAGE_KEY]);
+
+  // Check if user is already a patient and redirect if needed
+  useEffect(() => {
+    if (isLoaded && user && user.unsafeMetadata?.role !== 'patient') {
+      router.push('/dashboard');
+    }
+  }, [isLoaded, user, router]);
+
+  // Fetch available therapists
+  useEffect(() => {
+    const fetchTherapists = async () => {
+      try {
+        const response = await fetch('/api/therapists/available');
+        if (response.ok) {
+          const data = await response.json();
+          setAvailableTherapists(data.therapists || []);
+        } else {
+          console.error('Failed to fetch therapists:', response.statusText);
+        }
+      } catch (error) {
+        console.error('Error fetching therapists:', error);
+      }
+    };
+
+    if (isLoaded && user) {
+      fetchTherapists();
+    }
+  }, [isLoaded, user]);
 
   // Calculate completion percentage
   const calculateCompletionPercentage = (data) => {
@@ -384,11 +413,7 @@ export default function PatientDetailsPage() {
             }]
           },
           medicalInfo: {
-            primaryPhysician: {
-              name: '',
-              phone: '',
-              email: ''
-            },
+            assignedTherapist: '',
             allergies: [''],
             currentMedications: [{
               name: '',
@@ -882,41 +907,42 @@ export default function PatientDetailsPage() {
               {/* Step 3: Medical & Insurance */}
               {currentStep === 3 && (
                 <div className="space-y-6">
-                  {/* Primary Physician */}
+                  {/* Therapist Assignment */}
                   <div className="border rounded-lg p-6">
                     <h3 className="text-lg font-semibold mb-4 flex items-center">
                       <Heart className="w-5 h-5 mr-2 text-indigo-600" />
-                      Primary Physician
+                      Your Mental Health Doctor or Therapist
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                       <div>
-                        <Label htmlFor="physicianName">Doctor's Name</Label>
-                        <Input
-                          id="physicianName"
-                          placeholder="Dr. Smith"
-                          value={formData.medicalInfo.primaryPhysician.name}
-                          onChange={(e) => handleInputChange('medicalInfo', 'primaryPhysician', e.target.value, null, 'name')}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="physicianPhone">Phone</Label>
-                        <Input
-                          id="physicianPhone"
-                          type="tel"
-                          placeholder="(555) 123-4567"
-                          value={formData.medicalInfo.primaryPhysician.phone}
-                          onChange={(e) => handleInputChange('medicalInfo', 'primaryPhysician', e.target.value, null, 'phone')}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="physicianEmail">Email</Label>
-                        <Input
-                          id="physicianEmail"
-                          type="email"
-                          placeholder="doctor@clinic.com"
-                          value={formData.medicalInfo.primaryPhysician.email}
-                          onChange={(e) => handleInputChange('medicalInfo', 'primaryPhysician', e.target.value, null, 'email')}
-                        />
+                        <Label htmlFor="assignedTherapist">Select Your Therapist</Label>
+                        <select
+                          id="assignedTherapist"
+                          value={formData.medicalInfo.assignedTherapist}
+                          onChange={(e) => handleInputChange('medicalInfo', 'assignedTherapist', e.target.value)}
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        >
+                          <option value="">Select a therapist</option>
+                          {availableTherapists.map((therapist) => (
+                            <option key={therapist._id} value={therapist._id}>
+                              {therapist.name}
+                              {therapist.specializations.length > 0 && 
+                                ` - ${therapist.specializations.slice(0, 2).join(', ')}`
+                              }
+                              {therapist.yearsOfExperience > 0 && 
+                                ` (${therapist.yearsOfExperience} years exp.)`
+                              }
+                            </option>
+                          ))}
+                        </select>
+                        <p className="text-sm text-gray-600 mt-2">
+                          Choose from our verified mental health professionals. You will be assigned to one therapist who will provide your care.
+                        </p>
+                        {availableTherapists.length === 0 && (
+                          <p className="text-sm text-amber-600 mt-2">
+                            Loading available therapists... If none appear, please contact support.
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
