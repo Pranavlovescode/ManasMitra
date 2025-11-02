@@ -80,7 +80,7 @@ export default function MoodTrackerModal({ isOpen, onClose, userId, onMoodSubmit
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto bg-white">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-center text-gray-800">
             How are you feeling today? 🌟

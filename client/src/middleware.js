@@ -17,6 +17,12 @@ const isPublicApiRoute = createRouteMatcher([
   '/api/health',
 ]);
 
+const isAuthRoute = createRouteMatcher([
+  '/sign-in(.*)',
+  '/sign-up(.*)',
+  '/sso-callback(.*)',
+]);
+
 const isPatientRoute = createRouteMatcher(['/patient(.*)']);
 const isTherapistRoute = createRouteMatcher(['/therapist(.*)']);
 const isAdminRoute = createRouteMatcher(['/admin(.*)']);
@@ -27,6 +33,12 @@ export default clerkMiddleware((auth, req) => {
     console.log('Skipping auth for public route:', req.url);
     return;
   }
+
+  // Skip auth for authentication routes
+  if (isAuthRoute(req)) {
+    console.log('Skipping auth for authentication route:', req.url);
+    return;
+  }
   
   // Protect dashboard and user API routes
   if (isProtectedRoute(req)) {
@@ -35,7 +47,7 @@ export default clerkMiddleware((auth, req) => {
       const { userId, sessionClaims } = auth.protect();
       
       // Role-based access control
-      const userRole = sessionClaims?.metadata?.role || sessionClaims?.publicMetadata?.role;
+      const userRole = sessionClaims?.metadata?.role || sessionClaims?.publicMetadata?.role || sessionClaims?.unsafeMetadata?.role;
       
       // Check if user is trying to access wrong dashboard
       if (isPatientRoute(req) && userRole && userRole !== 'patient') {
@@ -64,5 +76,9 @@ export const config = {
     '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
     // Always run for API routes
     '/(api|trpc)(.*)',
+    // Include authentication routes
+    '/sign-in(.*)',
+    '/sign-up(.*)',
+    '/sso-callback(.*)',
   ],
 };

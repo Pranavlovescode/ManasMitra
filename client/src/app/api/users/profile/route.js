@@ -11,8 +11,9 @@ export async function POST(req) {
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    const profileData = await req.json();
+    
+    const body = await req.json();
+    console.log('📋 Profile completion request:', JSON.stringify(body, null, 2));
     
     await connectDB();
     
@@ -22,67 +23,32 @@ export async function POST(req) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Validate required fields based on role
-    if (user.role === 'patient') {
-      const { dateOfBirth, emergencyContact } = profileData;
-      
-      if (!dateOfBirth) {
-        return NextResponse.json({ error: 'Date of birth is required for patients' }, { status: 400 });
-      }
-      
-      user.dateOfBirth = new Date(dateOfBirth);
-      
-      if (emergencyContact) {
-        user.emergencyContact = emergencyContact;
-      }
-      
-      if (profileData.medicalHistory) {
-        user.medicalHistory = profileData.medicalHistory;
-      }
-      
-    } else if (user.role === 'therapist') {
-      const { licenseNumber, specializations, yearsOfExperience, education } = profileData;
-      
-      if (!licenseNumber || !yearsOfExperience) {
-        return NextResponse.json({ 
-          error: 'License number and years of experience are required for therapists' 
-        }, { status: 400 });
-      }
-      
-      user.licenseNumber = licenseNumber;
-      user.yearsOfExperience = yearsOfExperience;
-      
-      if (specializations) {
-        user.specializations = specializations;
-      }
-      
-      if (education) {
-        user.education = education;
-      }
-      
-      if (profileData.acceptingPatients !== undefined) {
-        user.acceptingPatients = profileData.acceptingPatients;
-      }
-    }
-
-    // Update common fields
-    if (profileData.phone) user.phone = profileData.phone;
-    if (profileData.address) user.address = profileData.address;
-    if (profileData.preferences) user.preferences = { ...user.preferences, ...profileData.preferences };
-
     // Mark profile as complete
     user.profileComplete = true;
-    user.lastLogin = new Date();
-
+    
+    // Update any additional allowed fields if provided
+    User.updateSafeUser(user, body);
+    
     await user.save();
+    
+    console.log('✅ Profile completed for user:', user.email);
 
     return NextResponse.json({ 
       message: 'Profile completed successfully', 
-      user 
+      user: User.getCleanUserData(user)
     });
 
   } catch (error) {
     console.error('Error completing profile:', error);
+    
+    // Check if it's a validation error due to extra fields
+    if (error.name === 'StrictModeError') {
+      return NextResponse.json({ 
+        error: 'Invalid data provided. Only allowed fields can be updated.',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      }, { status: 400 });
+    }
+    
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
@@ -108,13 +74,7 @@ export async function GET() {
       profileComplete: user.profileComplete,
       role: user.role,
       requiredFields: getRequiredFields(user.role),
-      user: {
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        role: user.role,
-        profileComplete: user.profileComplete
-      }
+      user: User.getCleanUserData(user)
     });
 
   } catch (error) {

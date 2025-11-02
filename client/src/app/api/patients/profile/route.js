@@ -71,12 +71,42 @@ export async function PUT(req) {
       return NextResponse.json({ error: 'Access denied. Only patients can update patient details.' }, { status: 403 });
     }
 
-    // Find and update patient details
-    let patient = await Patient.findOneAndUpdate(
-      { clerkId: userId },
-      { ...body },
-      { new: true, upsert: true }
-    );
+    // Find or create patient profile
+    let patient = await Patient.findOne({ clerkId: userId });
+    
+    if (!patient) {
+      patient = new Patient({
+        userId: user._id,
+        clerkId: userId,
+        personalInfo: {},
+        medicalInfo: {},
+        preferences: {},
+        consents: {},
+        status: { profileComplete: false }
+      });
+    }
+
+    // Update specific fields from the body
+    if (body.personalInfo) {
+      Object.assign(patient.personalInfo, body.personalInfo);
+    }
+    if (body.medicalInfo) {
+      Object.assign(patient.medicalInfo, body.medicalInfo);
+    }
+    if (body.preferences) {
+      Object.assign(patient.preferences, body.preferences);
+    }
+    if (body.guardianInfo) {
+      Object.assign(patient.guardianInfo, body.guardianInfo);
+    }
+    if (body.consents) {
+      Object.assign(patient.consents, body.consents);
+    }
+
+    // Mark profile as complete
+    patient.status.profileComplete = true;
+    
+    await patient.save();
 
     // Update user profile completion status
     await User.findByIdAndUpdate(user._id, { profileComplete: true });

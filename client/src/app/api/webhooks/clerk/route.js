@@ -129,6 +129,7 @@ async function handleUserCreated(userData) {
       first_name,
       last_name,
       unsafe_metadata,
+      public_metadata,
       image_url,
     } = userData;
 
@@ -138,13 +139,14 @@ async function handleUserCreated(userData) {
     console.log('  - first_name:', first_name);
     console.log('  - last_name:', last_name);
     console.log('  - unsafe_metadata:', unsafe_metadata);
+    console.log('  - public_metadata:', public_metadata);
     console.log('  - image_url:', image_url);
 
     const primaryEmail = email_addresses?.find(email => email.id === userData.primary_email_address_id);
     console.log('📧 [USER_CREATED] Primary email:', primaryEmail?.email_address);
     console.log('🔑 [USER_CREATED] Primary email ID:', userData.primary_email_address_id);
     
-    const role = unsafe_metadata?.role || 'patient';
+    const role = public_metadata?.role || unsafe_metadata?.role || 'patient';
     console.log('👔 [USER_CREATED] Assigned role:', role);
 
     const newUserData = {
@@ -153,15 +155,14 @@ async function handleUserCreated(userData) {
       firstName: first_name || '',
       lastName: last_name || '',
       role,
-      avatar: image_url,
+      profileImage: image_url,
       profileComplete: false,
-      isActive: true,
-      lastLogin: new Date(),
+      isActive: true
     };
 
     console.log('💾 [USER_CREATED] User data to save:', JSON.stringify(newUserData, null, 2));
 
-    const newUser = new User(newUserData);
+    const newUser = User.createSafeUser(newUserData);
     console.log('🏗️ [USER_CREATED] User model created, attempting to save...');
     
     await newUser.save();
@@ -206,18 +207,22 @@ async function handleUserUpdated(userData) {
       email: primaryEmail?.email_address,
       firstName: first_name || '',
       lastName: last_name || '',
-      avatar: image_url,
-      lastLogin: new Date(),
+      profileImage: image_url,
     };
 
     console.log('💾 [USER_UPDATED] Update data:', JSON.stringify(updateData, null, 2));
     console.log('🔍 [USER_UPDATED] Finding user with clerkId:', clerkId);
 
-    const updatedUser = await User.findOneAndUpdate(
-      { clerkId },
-      updateData,
-      { new: true }
-    );
+    // Find user first, then use safe update method
+    const user = await User.findOne({ clerkId });
+    if (user) {
+      User.updateSafeUser(user, updateData);
+      const updatedUser = await user.save();
+      console.log(`✅ [USER_UPDATED] User successfully updated in MongoDB: ${primaryEmail?.email_address}`);
+      console.log('🆔 [USER_UPDATED] MongoDB _id:', updatedUser._id);
+    } else {
+      console.log(`⚠️ [USER_UPDATED] No user found with clerkId: ${clerkId}`);
+    }
 
     if (updatedUser) {
       console.log(`✅ [USER_UPDATED] User successfully updated in MongoDB: ${primaryEmail?.email_address}`);

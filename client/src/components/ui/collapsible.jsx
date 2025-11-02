@@ -1,35 +1,11 @@
-import * as React from "react"
-import { cn } from "@/lib/utils"
+"use client"
 
-const Collapsible = React.forwardRef(({ className, ...props }, ref) => (
-  <div
-    className={cn("", className)}
-    ref={ref}
-    {...props}
-  />
-))
-Collapsible.displayName = "Collapsible"
+import * as CollapsiblePrimitive from "@radix-ui/react-collapsible"
 
-const CollapsibleTrigger = React.forwardRef(({ className, ...props }, ref) => (
-  <button
-    className={cn("", className)}
-    ref={ref}
-    {...props}
-  />
-))
-CollapsibleTrigger.displayName = "CollapsibleTrigger"
+const Collapsible = CollapsiblePrimitive.Root
 
-const CollapsibleContent = React.forwardRef(({ className, ...props }, ref) => (
-  <div
-    className={cn("overflow-hidden", className)}
-    ref={ref}
-    {...props}
-  />
-))
-CollapsibleContent.displayName = "CollapsibleContent"
+const CollapsibleTrigger = CollapsiblePrimitive.CollapsibleTrigger
 
-export {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-}
+const CollapsibleContent = CollapsiblePrimitive.CollapsibleContent
+
+export { Collapsible, CollapsibleTrigger, CollapsibleContent }

@@ -5,117 +5,102 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
+    trim: true
   },
   email: {
     type: String,
     required: true,
     unique: true,
+    lowercase: true,
+    trim: true
   },
   firstName: {
     type: String,
     required: true,
+    trim: true
   },
   lastName: {
     type: String,
     required: true,
+    trim: true
   },
   role: {
     type: String,
     enum: ['patient', 'therapist'],
-    required: true,
+    required: true
   },
   profileComplete: {
     type: Boolean,
-    default: false,
+    default: false
   },
-  // Patient-specific fields
-  dateOfBirth: {
-    type: Date,
-    required: false
-  },
-  emergencyContact: {
-    name: String,
-    phone: String,
-    relationship: String,
-  },
-  medicalHistory: [{
-    condition: String,
-    diagnosis: Date,
-    medications: [String],
-  }],
-  
-  // Therapist-specific fields
-  licenseNumber: {
-    type: String,
-    required: false
-  },
-  specializations: [String],
-  yearsOfExperience: {
-    type: Number,
-    required: false
-  },
-  education: [{
-    degree: String,
-    institution: String,
-    year: Number,
-  }],
-  acceptingPatients: {
-    type: Boolean,
-    default: true,
-  },
-  
-  // Common fields
-  avatar: String,
-  profileImage: String, // For Clerk profile image URL
-  phone: String,
-  address: {
-    street: String,
-    city: String,
-    state: String,
-    zipCode: String,
-    country: {
-      type: String,
-      default: 'US'
-    }
-  },
-  preferences: {
-    notifications: {
-      email: { type: Boolean, default: true },
-      sms: { type: Boolean, default: false },
-      push: { type: Boolean, default: true },
-    },
-    theme: {
-      type: String,
-      enum: ['light', 'dark', 'auto'],
-      default: 'auto'
-    },
-    language: {
-      type: String,
-      default: 'en'
-    }
-  },
-  
-  // Timestamps
-  lastLogin: Date,
+  profileImage: String,
   isActive: {
     type: Boolean,
-    default: true,
-  },
+    default: true
+  }
 }, {
-  timestamps: true, // This adds createdAt and updatedAt automatically
+  timestamps: true,
 });
 
-// Create indexes for better performance (excluding duplicates)
-// clerkId and email indexes are already created by unique: true
-UserSchema.index({ role: 1 });
-UserSchema.index({ 'licenseNumber': 1 }, { sparse: true });
+// Static method to create a safe user object (only allowed fields)
+UserSchema.statics.createSafeUser = function(userData) {
+  const allowedFields = ['clerkId', 'email', 'firstName', 'lastName', 'role', 'profileImage', 'profileComplete', 'isActive'];
+  const safeData = {};
+  
+  // Only include allowed fields from the schema
+  for (const field of allowedFields) {
+    if (userData[field] !== undefined) {
+      safeData[field] = userData[field];
+    }
+  }
+  
+  // Ensure required fields have values
+  if (!safeData.firstName) safeData.firstName = '';
+  if (!safeData.lastName) safeData.lastName = '';
+  if (!safeData.role) safeData.role = 'patient';
+  
+  return new this(safeData);
+};
 
-// Virtual for full name
-UserSchema.virtual('fullName').get(function() {
-  return `${this.firstName} ${this.lastName}`;
-});
+// Static method to safely update user with only allowed fields
+UserSchema.statics.updateSafeUser = function(userDoc, updateData) {
+  const allowedFields = ['email', 'firstName', 'lastName', 'profileImage', 'profileComplete'];
+  
+  // Only update allowed fields
+  for (const field of allowedFields) {
+    if (updateData[field] !== undefined) {
+      userDoc[field] = updateData[field];
+    }
+  }
+  
+  return userDoc;
+};
 
-// Ensure virtual fields are serialized
-UserSchema.set('toJSON', { virtuals: true });
+// Static method to return clean user data (remove sensitive fields)
+UserSchema.statics.getCleanUserData = function(userDoc) {
+  const userObj = userDoc.toObject ? userDoc.toObject() : userDoc;
+  
+  // Remove sensitive or internal fields
+  const cleanUser = {
+    _id: userObj._id,
+    clerkId: userObj.clerkId,
+    email: userObj.email,
+    firstName: userObj.firstName,
+    lastName: userObj.lastName,
+    role: userObj.role,
+    profileComplete: userObj.profileComplete,
+    profileImage: userObj.profileImage,
+    isActive: userObj.isActive !== false, // Default to true if undefined
+    createdAt: userObj.createdAt,
+    updatedAt: userObj.updatedAt
+  };
+  
+  return cleanUser;
+};
+
+// Instance method to get clean data
+UserSchema.methods.getCleanData = function() {
+  return this.constructor.getCleanUserData(this);
+};
 
 export default mongoose.models.User || mongoose.model('User', UserSchema);

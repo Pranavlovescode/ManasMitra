@@ -1215,7 +1215,7 @@ export default function PatientDetailsPage() {
               )}
 
               {/* Debug Auth Button - Remove in production */}
-              {/* {process.env.NODE_ENV === 'development' && (
+              {process.env.NODE_ENV === 'development' && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <p className="text-blue-800 text-sm mb-2">Debug: Authentication Status</p>
                   <div className="text-xs text-gray-600 mb-2">
@@ -1255,7 +1255,7 @@ export default function PatientDetailsPage() {
                     </button>
                   </div>
                 </div>
-              )} */}
+              )}
             </CardContent>
 
             {/* Navigation Buttons */}

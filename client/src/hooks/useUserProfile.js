@@ -9,16 +9,40 @@ export function useUserProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (!isLoaded) {
-        return;
-      }
+  const fetchUserProfile = async () => {
+    // Wait for Clerk to fully load
+    if (!isLoaded) {
+      console.log('🔄 [useUserProfile] Waiting for Clerk to load...');
+      return;
+    }
 
-      if (!user) {
-        setLoading(false);
-        return;
-      }
+    // If no user is signed in, stop loading
+    if (!user) {
+      console.log('ℹ️ [useUserProfile] No user signed in');
+      setLoading(false);
+      setDbUser(null);
+      setError(null);
+      return;
+    }
+
+    // Check if user has a valid ID (indicates session is established)
+    if (!user.id) {
+      console.log('⚠️ [useUserProfile] User object exists but no ID found, waiting...');
+      return;
+    }
+
+    console.log('🔍 [useUserProfile] Fetching profile for user:', user.id);
+
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch('/api/users', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
       try {
         setLoading(true);
@@ -55,9 +79,24 @@ export function useUserProfile() {
       } finally {
         setLoading(false);
       }
-    };
 
-    fetchUserProfile();
+      const userData = await response.json();
+      console.log('✅ [useUserProfile] Profile fetched successfully');
+      setDbUser(userData);
+      setError(null);
+    } catch (err) {
+      console.error('❌ [useUserProfile] Error fetching user profile:', err);
+      setError(err.message);
+      setDbUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Add a small delay to ensure session is fully established
+    const timeoutId = setTimeout(fetchUserProfile, 100);
+    return () => clearTimeout(timeoutId);
   }, [user, isLoaded]);
 
   // Check if profile is complete based on role
@@ -69,7 +108,7 @@ export function useUserProfile() {
     error,
     isProfileComplete,
     refetch: () => {
-      setLoading(true);
+      console.log('🔄 [useUserProfile] Manual refetch triggered');
       fetchUserProfile();
     },
   };
@@ -95,16 +134,10 @@ function checkProfileCompleteness(user) {
       }
       return user[field] && user[field].toString().trim() !== "";
     });
-  } else if (user.role === "therapist") {
-    const therapistFields = ["licenseNumber", "specializations"];
-    return therapistFields.every((field) => {
-      if (field === "specializations") {
-        return (
-          user[field] && Array.isArray(user[field]) && user[field].length > 0
-        );
-      }
-      return user[field] && user[field].toString().trim() !== "";
-    });
+  } else if (user.role === 'therapist') {
+    // For therapists, check if they have basic profile fields and profileComplete flag
+    // The detailed therapist profile is handled by the Therapist model
+    return user.profileComplete === true;
   }
 
   return false;

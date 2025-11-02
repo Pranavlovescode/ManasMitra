@@ -30,15 +30,15 @@ export async function GET(request) {
         return NextResponse.json({ error: 'User not found in Clerk' }, { status: 404 });
       }
 
-      therapist = new User({
+      therapist = User.createSafeUser({
         clerkId: clerkUser.id,
         email: clerkUser.emailAddresses[0]?.emailAddress,
         firstName: clerkUser.firstName || 'User',
         lastName: clerkUser.lastName || 'Unknown', // Provide default if missing
         role: clerkUser.unsafeMetadata?.role || 'therapist',
         profileImage: clerkUser.imageUrl,
-        isActive: true,
-        lastLogin: new Date(),
+        profileComplete: false,
+        isActive: true
       });
 
       await therapist.save();

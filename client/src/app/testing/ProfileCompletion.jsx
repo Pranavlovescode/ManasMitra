@@ -72,13 +72,77 @@ export default function ProfileCompletion() {
     setError('');
 
     try {
-      const response = await fetch('/api/users', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      let response;
+      
+      if (userRole === 'patient') {
+        // For patients, send profile data to patient endpoint
+        const patientData = {
+          personalInfo: {
+            dateOfBirth: formData.dateOfBirth,
+            phoneNumber: formData.phone,
+            address: formData.address
+          },
+          guardianInfo: {
+            guardians: formData.emergencyContact.name ? [{
+              firstName: formData.emergencyContact.name.split(' ')[0] || '',
+              lastName: formData.emergencyContact.name.split(' ').slice(1).join(' ') || '',
+              relationship: formData.emergencyContact.relationship,
+              phoneNumber: formData.emergencyContact.phone,
+              isPrimary: true
+            }] : []
+          }
+        };
+
+        console.log('📤 Sending patient profile data:', patientData);
+
+        response = await fetch('/api/patients/profile', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(patientData),
+        });
+      } else if (userRole === 'therapist') {
+        // For therapists, send profile data to therapist endpoint
+        const therapistData = {
+          professionalInfo: {
+            licenseNumber: formData.licenseNumber,
+            yearsOfExperience: formData.yearsOfExperience ? parseInt(formData.yearsOfExperience) : 0,
+            specializations: formData.specializations,
+            education: formData.education
+          },
+          contactInfo: {
+            phoneNumber: formData.phone,
+          }
+        };
+
+        console.log('📤 Sending therapist profile data:', therapistData);
+
+        response = await fetch('/api/therapists/profile', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(therapistData),
+        });
+      } else {
+        // Default: just update basic user info
+        const userData = {
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          profileComplete: true,
+        };
+
+        console.log('📤 Sending basic user data:', userData);
+
+        response = await fetch('/api/users', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(userData),
+        });
+      }
 
       if (!response.ok) {
         const errorData = await response.json();
