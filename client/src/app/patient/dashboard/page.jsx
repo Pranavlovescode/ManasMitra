@@ -15,8 +15,15 @@ import { useDailyMoodTracker } from "@/hooks/useDailyMoodTracker";
 
 export default function PatientDashboard() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { user, isLoaded } = useUser();
+  
+  // Wait for client-side hydration
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   
   // Daily mood tracker integration
   const {
@@ -27,6 +34,12 @@ export default function PatientDashboard() {
     getTodayMood,
     showMoodModalManually
   } = useDailyMoodTracker(user?.id);
+
+  useEffect(() => {
+    if (isLoaded) {
+      setIsLoading(false);
+    }
+  }, [isLoaded]);
 
   // useEffect(() => {
   //   const checkAuth = async () => {
@@ -69,7 +82,8 @@ export default function PatientDashboard() {
     router.push("/");
   };
 
-  if (isLoading || !isLoaded) {
+  // Don't render anything until mounted (prevents hydration mismatch)
+  if (!mounted || isLoading || !isLoaded) {
     return (
       <div className="min-h-screen bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
         <div className="text-center">
@@ -92,10 +106,6 @@ export default function PatientDashboard() {
       </div>
     );
   }
-
-  // if (!user) {
-  //   return null;
-  // }
 
   return (
     <div className="min-h-screen bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50">

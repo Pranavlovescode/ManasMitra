@@ -52,10 +52,20 @@ export default function AppointmentBooking({ userId }) {
       const response = await fetch('/api/therapists/available');
       if (response.ok) {
         const data = await response.json();
-        setTherapists(data);
+        console.log('📊 Therapists data:', data);
+        // API returns { therapists: [...] } format
+        if (data.therapists && Array.isArray(data.therapists)) {
+          setTherapists(data.therapists);
+        } else if (Array.isArray(data)) {
+          setTherapists(data);
+        } else {
+          console.error('Invalid therapists data format:', data);
+          setTherapists([]);
+        }
       }
     } catch (error) {
       console.error("Failed to fetch therapists:", error);
+      setTherapists([]);
     } finally {
       setLoadingTherapists(false);
     }

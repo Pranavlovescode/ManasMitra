@@ -35,7 +35,8 @@ export async function GET(req) {
       const therapistDetails = await Therapist.findOne({ userId: therapist._id });
       
       return {
-        _id: therapist._id,
+        _id: therapistDetails?._id || therapist._id, // Use Therapist document _id, not User _id
+        userId: therapist._id, // Store User _id separately
         name: `${therapist.firstName} ${therapist.lastName}`,
         email: therapist.email,
         specializations: therapistDetails?.professionalInfo?.specializations || [],
