@@ -135,6 +135,12 @@ class JournalAnalysisResponse(BaseModel):
     recommendations: List[str] = []
     analysis_timestamp: datetime
 
+class ChatbotRequest(BaseModel):
+    message: str
+
+class ChatbotReply(BaseModel):
+    response: str
+
 # Dependency to get CBT engine
 def get_cbt_engine():
     try:
@@ -142,6 +148,14 @@ def get_cbt_engine():
     except Exception as e:
         logger.error(f"Failed to initialize CBT engine: {e}")
         raise HTTPException(status_code=500, detail="CBT engine initialization failed")
+    
+def get_generate_response():
+    try:
+        from chatbot.mistral_model import generate_response
+        return generate_response
+    except Exception as e:
+        logger.error(f"Failed to load chatbot model: {e}")
+        raise HTTPException(status_code=500, detail="Chatbot model initialization failed")
 
 # Root endpoint with HTML response
 @app.get("/", response_class=HTMLResponse)
@@ -728,7 +742,17 @@ async def analyze_journal(request: JournalAnalysisRequest, cbt_engine = Depends(
         logger.error(f"Journal analysis failed: {e}")
         logger.error(traceback.format_exc())
         raise HTTPException(status_code=500, detail=f"Journal analysis failed: {str(e)}")
+    
 
+@app.post("/chatbot", response_model = ChatbotReply)
+async def chatbot_generate(req: ChatbotRequest):
+    try:
+        generate_response = get_generate_response()
+        out = generate_response(req.message)
+        return ChatbotReply(response=out)
+    except Exception as e:
+        logger.exception("Chatbot generation failed")
+        raise HTTPException(status_code=500, detail=str(e))
 
 # Global error handler
 @app.exception_handler(Exception)

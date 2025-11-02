@@ -90,8 +90,31 @@ def generate_response(prompt: str, max_new_tokens: int = 256):
     """
     Generate a natural language response from the Mistral model.
     """
+    # working code fall back here if error occurs
+    # try:
+    #     inputs = tokenizer(prompt, return_tensors="pt").to(device)
+
+    #     with torch.no_grad():
+    #         outputs = model.generate(
+    #             **inputs,
+    #             max_new_tokens=max_new_tokens,
+    #             temperature=0.7,
+    #             top_p=0.9,
+    #             pad_token_id=tokenizer.eos_token_id
+    #         )
+
+    #     response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    #     return response
+
+    # except Exception as e:
+    #     return f"⚠️ Error generating response: {str(e)}"
+
+
     try:
-        inputs = tokenizer(prompt, return_tensors="pt").to(device)
+        batch = tokenizer(prompt, return_tensors="pt")
+        # move tensors to model device
+        device = next(model.parameters()).device
+        inputs = {k: v.to(device) for k, v in batch.items()}
 
         with torch.no_grad():
             outputs = model.generate(
