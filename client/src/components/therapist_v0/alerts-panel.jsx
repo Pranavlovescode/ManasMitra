@@ -23,10 +23,8 @@ export default function AlertsPanel({ therapistId }) {
 
   const fetchAlerts = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`/api/alerts?therapistId=${therapistId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // Rely on Clerk cookies; no need to pass therapistId or Authorization header
+      const res = await fetch(`/api/alerts`);
 
       if (res.ok) {
         const data = await res.json();
@@ -42,10 +40,9 @@ export default function AlertsPanel({ therapistId }) {
   const handleDismissAlert = async (alertId) => {
     // Type :string removed
     try {
-      const token = localStorage.getItem("token");
       await fetch(`/api/alerts/${alertId}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+        // Clerk cookies are sent automatically; no Authorization header needed
       });
       setAlerts(alerts.filter((a) => a._id !== alertId));
     } catch (error) {

@@ -139,6 +139,55 @@ export async function POST(request) {
 
     const newJournal = await Journal.create(journalData);
 
+    // After creating journal, check for high-risk streak and notify therapist
+    try {
+      // Consider risk high if score >= 0.6
+      const riskScore = newJournal?.analysis?.contentAnalysis?.riskScore;
+      if (typeof riskScore === 'number' && riskScore >= 0.6) {
+        // Load previous 2 recent high-risk journals
+        const recentHigh = await Journal.find({
+          userId,
+          'analysis.contentAnalysis.riskScore': { $gte: 0.6 },
+          _id: { $ne: newJournal._id }
+        })
+          .sort({ createdAt: -1 })
+          .limit(2)
+          .lean();
+
+        if (recentHigh.length >= 2) {
+          // Find patient and assigned therapist
+          const Patient = (await import('@/models/Patient')).default;
+          const User = (await import('@/models/User')).default;
+          const Alert = (await import('@/models/Alert')).default;
+          await connectDB();
+
+          const patient = await Patient.findOne({ clerkId: userId })
+            .populate('userId', 'firstName lastName')
+            .select('medicalInfo.assignedTherapist clerkId userId');
+
+          const therapistId = patient?.medicalInfo?.assignedTherapist;
+          if (therapistId) {
+            const fullName = `${patient?.userId?.firstName || ''} ${patient?.userId?.lastName || ''}`.trim();
+            await Alert.create({
+              therapistId,
+              patientId: patient._id,
+              patientClerkId: patient.clerkId,
+              patientName: fullName || 'Patient',
+              title: 'High Risk Trend Detected',
+              message: 'Three consecutive journal entries show high risk indicators. Review patient ASAP.',
+              severity: 'high',
+              meta: {
+                journalIds: [newJournal._id, ...recentHigh.map(j => j._id)],
+                riskScores: [riskScore, ...recentHigh.map(j => j.analysis?.contentAnalysis?.riskScore)],
+              }
+            });
+          }
+        }
+      }
+    } catch (notifyErr) {
+      console.warn('Risk alert generation failed (non-blocking):', notifyErr?.message || notifyErr);
+    }
+
     return NextResponse.json(newJournal, { status: 201 });
   } catch (error) {
     console.error("Journal POST error:", error);

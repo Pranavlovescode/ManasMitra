@@ -13,9 +13,6 @@ import {
   Line,
   BarChart,
   Bar,
-  PieChart,
-  Pie,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -27,8 +24,9 @@ import {
 export default function AnalyticsDashboard({ patientId }) {
   // Type annotation removed
   const [moodData, setMoodData] = useState([]); // Type <any[]> removed
-  const [assessmentData, setAssessmentData] = useState([]); // Type <any[]> removed
-  const [engagementData, setEngagementData] = useState([]); // Type <any[]> removed
+  const [sentimentData, setSentimentData] = useState([]); // Type <any[]> removed
+  const [riskData, setRiskData] = useState([]); // Type <any[]> removed
+  const [entriesData, setEntriesData] = useState([]); // Type <any[]> removed
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -37,16 +35,14 @@ export default function AnalyticsDashboard({ patientId }) {
 
   const fetchAnalytics = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const res = await fetch(`/api/analytics/patient/${patientId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
+      const res = await fetch(`/api/therapists/patient/${patientId}/journal-trends`);
       if (res.ok) {
         const data = await res.json();
-        setMoodData(data.moodTrends || []);
-        setAssessmentData(data.assessmentHistory || []);
-        setEngagementData(data.engagementMetrics || []);
+        // Normalize data for charts
+        setMoodData((data.moodsOverTime || []).map(d => ({ date: d.date, score: d.moodScore })));
+        setSentimentData((data.sentimentTrend || []).map(d => ({ date: d.date, score: d.sentimentScore })));
+        setRiskData((data.riskTrend || []).map(d => ({ date: d.date, score: d.riskScore })));
+        setEntriesData((data.entriesOverTime || []).map(d => ({ date: d.date, count: d.count })));
       }
     } catch (error) {
       console.error("Failed to fetch analytics:", error);
@@ -67,29 +63,20 @@ export default function AnalyticsDashboard({ patientId }) {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Mood Trends</CardTitle>
-          <CardDescription>Patient's mood patterns over time</CardDescription>
+          <CardTitle>Mood Trend</CardTitle>
+          <CardDescription>Patient's mood score over time</CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart
-              data={
-                moodData.length > 0
-                  ? moodData
-                  : [{ date: "No data", intensity: 0 }]
-              }
+              data={moodData.length > 0 ? moodData : [{ date: "No data", score: 0 }]}
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
               <YAxis />
               <Tooltip />
               <Legend />
-              <Line
-                type="monotone"
-                dataKey="intensity"
-                stroke="#8884d8"
-                name="Mood Intensity"
-              />
+              <Line type="monotone" dataKey="score" stroke="#8884d8" name="Mood" />
             </LineChart>
           </ResponsiveContainer>
         </CardContent>
@@ -97,62 +84,57 @@ export default function AnalyticsDashboard({ patientId }) {
 
       <Card>
         <CardHeader>
-          <CardTitle>Assessment Scores</CardTitle>
-          <CardDescription>PHQ-9 and GAD-7 progression</CardDescription>
+          <CardTitle>Sentiment Trend</CardTitle>
+          <CardDescription>Overall sentiment from journal analysis</CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
-            <BarChart
-              data={
-                assessmentData.length > 0
-                  ? assessmentData
-                  : [{ date: "No data", score: 0 }]
-              }
-            >
+            <LineChart data={sentimentData.length > 0 ? sentimentData : [{ date: "No data", score: 0 }]}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" />
               <YAxis />
               <Tooltip />
               <Legend />
-              <Bar dataKey="score" fill="#82ca9d" name="Assessment Score" />
-            </BarChart>
+              <Line type="monotone" dataKey="score" stroke="#82ca9d" name="Sentiment" />
+            </LineChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Engagement Metrics</CardTitle>
-          <CardDescription>Patient activity distribution</CardDescription>
+          <CardTitle>Risk Trend</CardTitle>
+          <CardDescription>Risk score from journal analysis</CardDescription>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={
-                  engagementData.length > 0
-                    ? engagementData
-                    : [{ name: "No data", value: 1 }]
-                }
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, value }) => `${name}: ${value}`}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {engagementData.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={
-                      ["#8884d8", "#82ca9d", "#ffc658", "#ff7c7c"][index % 4]
-                    }
-                  />
-                ))}
-              </Pie>
+            <LineChart data={riskData.length > 0 ? riskData : [{ date: "No data", score: 0 }]}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" />
+              <YAxis />
               <Tooltip />
-            </PieChart>
+              <Legend />
+              <Line type="monotone" dataKey="score" stroke="#ff7c7c" name="Risk" />
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Entry Frequency</CardTitle>
+          <CardDescription>Number of journal entries per day</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={entriesData.length > 0 ? entriesData : [{ date: 'No data', count: 0 }] }>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="count" fill="#8884d8" name="Entries" />
+            </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>

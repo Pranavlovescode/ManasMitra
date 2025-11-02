@@ -1,15 +1,18 @@
 import { NextResponse } from 'next/server';
-import { getAuth } from '@clerk/nextjs/server';
+import { auth } from '@clerk/nextjs/server';
 import connectDB from '@/lib/mongodb';
 import Appointment from '@/models/Appointment';
 import Patient from '@/models/Patient';
 import Therapist from '@/models/Therapist';
 import User from '@/models/User';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
 // GET - Fetch appointments for patient or therapist
 export async function GET(request) {
   try {
-    const { userId } = getAuth(request);
+    const { userId } = await auth(request);
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -48,7 +51,7 @@ export async function GET(request) {
 // POST - Create new appointment
 export async function POST(request) {
   try {
-    const { userId } = getAuth(request);
+    const { userId } = await auth(request);
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -87,9 +90,15 @@ export async function POST(request) {
       console.log('✅ Patient profile created successfully');
     }
 
-    // Get therapist to get their clerkId
-    const therapist = await Therapist.findById(therapistId);
+    // Resolve therapist by provided identifier.
+    // The client may send either the Therapist._id or the User._id of the therapist (from assigned therapist endpoint).
+    let therapist = await Therapist.findById(therapistId);
     if (!therapist) {
+      // Fallback: try to match by therapist's userId
+      therapist = await Therapist.findOne({ userId: therapistId });
+    }
+    if (!therapist) {
+      console.error('THERAPIST NOT FOUND for id:', therapistId);
       return NextResponse.json({ error: 'Therapist not found' }, { status: 404 });
     }
 

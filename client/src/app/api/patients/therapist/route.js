@@ -5,9 +5,10 @@ import User from '@/models/User';
 import Patient from '@/models/Patient';
 
 // GET /api/patients/therapist - Get the therapist assigned to current patient
-export async function GET() {
+export async function GET(req) {
   try {
-    const { userId } = auth();
+    // Use request-aware auth to ensure headers/cookies are considered
+    const { userId } = await auth(req);
     
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -19,19 +20,50 @@ export async function GET() {
     const patient = await Patient.findOne({ clerkId: userId })
       .populate('medicalInfo.assignedTherapist', 'firstName lastName email');
     
+  console.log('Debug - Current userId:', userId);
+    console.log('Debug - Found patient:', patient ? 'Yes' : 'No');
+    console.log('Debug - Patient clerkId:', patient?.clerkId);
+    console.log('Debug - Medical Info:', patient?.medicalInfo);
+    console.log('Debug - Assigned Therapist:', patient?.medicalInfo?.assignedTherapist);
+    
     if (!patient) {
-      return NextResponse.json({ error: 'Patient not found' }, { status: 404 });
+      return NextResponse.json({ 
+        error: 'Patient not found',
+        debug: {
+          userId,
+          message: 'No patient record found with this clerkId'
+        }
+      }, { status: 404 });
     }
 
     const assignedTherapist = patient.medicalInfo?.assignedTherapist;
 
+    // Try to fetch the Therapist document to expose its _id for client-side correctness
+    let therapistDocId = null;
+    if (assignedTherapist?._id) {
+      try {
+        const therapistDoc = await (await import('@/models/Therapist')).default.findOne({ userId: assignedTherapist._id });
+        therapistDocId = therapistDoc?._id || null;
+      } catch (e) {
+        console.warn('Unable to resolve Therapist doc for assigned user:', e?.message);
+      }
+    }
+
     return NextResponse.json({ 
       hasAssignedTherapist: !!assignedTherapist,
       therapist: assignedTherapist ? {
-        _id: assignedTherapist._id,
+        _id: assignedTherapist._id, // User _id (kept for backward compatibility)
+        therapistDocId: therapistDocId, // Preferred id to use for POST /api/appointments
         name: `${assignedTherapist.firstName} ${assignedTherapist.lastName}`,
         email: assignedTherapist.email
-      } : null
+      } : null,
+      debug: {
+        userId,
+        patientFound: !!patient,
+        clerkId: patient?.clerkId,
+        hasAssignedTherapist: !!assignedTherapist,
+        assignedTherapistId: assignedTherapist?._id
+      }
     });
 
   } catch (error) {

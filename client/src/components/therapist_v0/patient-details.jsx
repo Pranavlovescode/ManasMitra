@@ -18,6 +18,7 @@ export default function PatientDetails({ patientId, therapistId }) {
   const [journals, setJournals] = useState([]); // Type <any[]> removed
   const [moods, setMoods] = useState([]); // Type <any[]> removed
   const [assessments, setAssessments] = useState([]); // Type <any[]> removed
+  const [journalTrends, setJournalTrends] = useState(null); // aggregated trends
   const [clinicalNotes, setClinicalNotes] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -29,19 +30,27 @@ export default function PatientDetails({ patientId, therapistId }) {
 
   const fetchPatientData = async () => {
     try {
-      const [patientRes, journalsRes, moodsRes, assessmentsRes] =
+      const [patientRes, journalsRes, trendsRes, moodsRes, assessmentsRes] =
         await Promise.all([
           fetch(`/api/therapists/patient/${patientId}`),
-          fetch(`/api/journal?userId=${patientId}`),
-          fetch(`/api/mood?userId=${patientId}`),
-          fetch(`/api/assessment?userId=${patientId}`),
+          // therapist-scoped journals API
+          fetch(`/api/therapists/patient/${patientId}/journals`),
+          // aggregated trends for journals
+          fetch(`/api/therapists/patient/${patientId}/journal-trends`),
+          fetch(`/api/therapists/patient/${patientId}/moods`),
+          fetch(`/api/therapists/patient/${patientId}/assessments`),
         ]);
 
       if (patientRes.ok) {
         const data = await patientRes.json();
         setPatient(data);
       }
-      if (journalsRes.ok) setJournals(await journalsRes.json());
+      if (journalsRes.ok) {
+        const j = await journalsRes.json();
+        // new API returns { items, page, total }
+        setJournals(Array.isArray(j) ? j : (j.items || []));
+      }
+      if (trendsRes.ok) setJournalTrends(await trendsRes.json());
       if (moodsRes.ok) setMoods(await moodsRes.json());
       if (assessmentsRes.ok) setAssessments(await assessmentsRes.json());
     } catch (error) {
@@ -122,6 +131,45 @@ export default function PatientDetails({ patientId, therapistId }) {
           </div>
         </CardContent>
       </Card>
+
+      {journalTrends && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Journal Trends</CardTitle>
+            <CardDescription>
+              Summary of mood, sentiment, risk, and cognitive patterns
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">Mood Direction</p>
+                <p className="text-2xl font-bold capitalize">{journalTrends.directions?.mood || 'unknown'}</p>
+              </div>
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">Sentiment Direction</p>
+                <p className="text-2xl font-bold capitalize">{journalTrends.directions?.sentiment || 'unknown'}</p>
+              </div>
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">Risk Direction</p>
+                <p className="text-2xl font-bold capitalize">{journalTrends.directions?.risk || 'unknown'}</p>
+              </div>
+            </div>
+            {journalTrends.topDistortions?.length > 0 && (
+              <div className="mt-4">
+                <p className="text-sm text-muted-foreground mb-1">Top Cognitive Distortions</p>
+                <ul className="list-disc list-inside text-sm">
+                  {journalTrends.topDistortions.map((d) => (
+                    <li key={d.name}>
+                      <span className="capitalize">{d.name}</span> — {d.count}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

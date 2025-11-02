@@ -27,12 +27,42 @@ export default function AppointmentBooking({ userId }) {
   const [patientNotes, setPatientNotes] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [loadingTherapists, setLoadingTherapists] = useState(false);
+  const [hasAssignedTherapist, setHasAssignedTherapist] = useState(null); // null = loading, true/false = loaded
 
   useEffect(() => {
     if (userId) {
       fetchAppointments();
+      checkAssignedTherapist();
     }
   }, [userId]);
+
+  const checkAssignedTherapist = async () => {
+    try {
+      const response = await fetch('/api/patients/therapist', { cache: 'no-store' });
+      const raw = await response.text();
+      let data = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch (e) {
+        data = { raw };
+      }
+
+      console.log('Assigned therapist check response:', { status: response.status, data });
+
+      if (response.ok && typeof data?.hasAssignedTherapist === 'boolean') {
+        setHasAssignedTherapist(data.hasAssignedTherapist);
+      } else if (response.status === 401) {
+        console.error('Unauthorized while checking assigned therapist');
+        setHasAssignedTherapist(false);
+      } else {
+        console.error('API Error (patients/therapist):', { status: response.status, data });
+        setHasAssignedTherapist(false);
+      }
+    } catch (error) {
+      console.error("Failed to check assigned therapist:", error);
+      setHasAssignedTherapist(false);
+    }
+  };
 
   const fetchAppointments = async () => {
     try {
@@ -49,23 +79,41 @@ export default function AppointmentBooking({ userId }) {
   const fetchTherapists = async () => {
     setLoadingTherapists(true);
     try {
-      const response = await fetch('/api/therapists/available');
+      const response = await fetch('/api/patients/therapist', { cache: 'no-store' });
+      const raw = await response.text();
+      let data = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch (e) {
+        data = { raw };
+      }
+
+      console.log('Fetch therapists response:', { status: response.status, data });
+
       if (response.ok) {
-        const data = await response.json();
-        console.log('📊 Therapists data:', data);
-        // API returns { therapists: [...] } format
-        if (data.therapists && Array.isArray(data.therapists)) {
-          setTherapists(data.therapists);
-        } else if (Array.isArray(data)) {
-          setTherapists(data);
+        // The API returns { hasAssignedTherapist: boolean, therapist: {...} }
+        // Convert to array format for consistency with existing code
+        if (data.hasAssignedTherapist && data.therapist) {
+          const therapistArray = [data.therapist];
+          setTherapists(therapistArray);
+          // Auto-select the assigned therapist since there's only one
+          setSelectedTherapist(data.therapist);
+          setHasAssignedTherapist(true);
         } else {
-          console.error('Invalid therapists data format:', data);
+          console.log('No assigned therapist found or invalid data:', data);
           setTherapists([]);
+          setSelectedTherapist(null);
+          setHasAssignedTherapist(false);
         }
+      } else {
+        console.error("Failed to fetch assigned therapist: API returned error status", response.status, data);
+        setTherapists([]);
+        setHasAssignedTherapist(false);
       }
     } catch (error) {
-      console.error("Failed to fetch therapists:", error);
+      console.error("Failed to fetch assigned therapist:", error);
       setTherapists([]);
+      setHasAssignedTherapist(false);
     } finally {
       setLoadingTherapists(false);
     }
@@ -78,7 +126,7 @@ export default function AppointmentBooking({ userId }) {
 
   const handleBookAppointment = async () => {
     if (!selectedTherapist) {
-      alert("Please select a therapist");
+      alert("Please select your assigned therapist");
       return;
     }
     if (!selectedDate || !selectedTime) {
@@ -97,7 +145,8 @@ export default function AppointmentBooking({ userId }) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          therapistId: selectedTherapist._id,
+          // Prefer Therapist document id if provided; fallback to User id
+          therapistId: selectedTherapist.therapistDocId || selectedTherapist._id,
           scheduledAt: scheduledDateTime.toISOString(),
           type: sessionType,
           duration: duration,
@@ -154,46 +203,94 @@ export default function AppointmentBooking({ userId }) {
           <CardHeader>
             <CardTitle>Book an Appointment</CardTitle>
             <CardDescription>
-              Schedule a therapy session with a therapist
+              {hasAssignedTherapist === null 
+                ? "Checking therapist assignment..." 
+                : hasAssignedTherapist 
+                ? "Schedule a therapy session with your assigned therapist"
+                : "You need to be assigned to a therapist before booking appointments"
+              }
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={handleShowBooking} className="w-full">
-              Book New Appointment
+            <Button 
+              onClick={handleShowBooking} 
+              className="w-full"
+              disabled={hasAssignedTherapist !== true}
+            >
+              {hasAssignedTherapist === null 
+                ? "Loading..." 
+                : hasAssignedTherapist 
+                ? "Book New Appointment"
+                : "No Therapist Assigned"
+              }
             </Button>
+            {hasAssignedTherapist === false && (
+              <div className="mt-3">
+                <p className="text-sm text-gray-600 text-center mb-2">
+                  Please contact support to get assigned to a therapist before booking appointments.
+                </p>
+                <Button
+                  onClick={async () => {
+                    try {
+                      const response = await fetch('/api/debug-patient');
+                      const data = await response.json();
+                      console.log('Debug patient data:', data);
+                      alert('Check console for debug information');
+                    } catch (error) {
+                      console.error('Debug failed:', error);
+                    }
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                >
+                  Debug Patient Data (Check Console)
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       ) : (
         <Card>
           <CardHeader>
             <CardTitle>Schedule Your Session</CardTitle>
-            <CardDescription>Select a therapist and choose your preferred time</CardDescription>
+            <CardDescription>Book an appointment with your assigned therapist</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Therapist Selection */}
             <div className="space-y-3">
-              <label className="text-sm font-medium">Select Therapist</label>
+              <label className="text-sm font-medium">Your Assigned Therapist</label>
+              {therapists.length === 1 && selectedTherapist && (
+                <p className="text-xs text-gray-600 mb-2">
+                  Your assigned therapist is automatically selected. Proceed to choose your appointment time.
+                </p>
+              )}
               {loadingTherapists ? (
-                <div className="text-center py-4 text-gray-500">Loading therapists...</div>
-              ) : therapists.length === 0 ? (
-                <div className="text-center py-4 text-gray-500">No therapists available</div>
+                <div className="text-center py-4 text-gray-500">Loading your assigned therapist...</div>
+              ) : !Array.isArray(therapists) || therapists.length === 0 ? (
+                <div className="text-center py-4 text-gray-500">
+                  <p className="mb-2">No therapist assigned to your account yet.</p>
+                  <p className="text-sm">Please contact support to get assigned to a therapist.</p>
+                </div>
               ) : (
                 <div className="grid gap-3 max-h-64 overflow-y-auto">
                   {therapists.map((therapist) => (
                     <div
                       key={therapist._id}
-                      onClick={() => setSelectedTherapist(therapist)}
-                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
+                      className={`p-4 border-2 rounded-lg transition-all ${
                         selectedTherapist?._id === therapist._id
                           ? 'border-indigo-600 bg-indigo-50'
-                          : 'border-gray-200 hover:border-indigo-300'
+                          : 'border-gray-200'
                       }`}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 mb-1">
                             <User className="w-4 h-4 text-gray-500" />
                             <p className="font-semibold">{therapist.name}</p>
+                            <Badge variant="outline" className="text-xs text-indigo-600 border-indigo-300">
+                              Assigned Therapist
+                            </Badge>
                           </div>
                           <p className="text-sm text-gray-600 mt-1">{therapist.email}</p>
                           {therapist.yearsOfExperience > 0 && (
