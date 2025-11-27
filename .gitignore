@@ -3,3 +3,6 @@ env/
 __pycache__/
 node_modules/
 chatbot/mistral_local
+chatbot/zephyr_remote_model
+chatbot/zephyr_model.ipynb
+venv_remote/
