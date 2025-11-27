@@ -84,6 +84,7 @@ export default function AppointmentBooking({ userId }) {
       const response = await fetch(`/api/appointments?role=patient`);
       if (response.ok) {
         const data = await response.json();
+        console.log(data)
         setAppointments(data);
       }
     } catch (error) {

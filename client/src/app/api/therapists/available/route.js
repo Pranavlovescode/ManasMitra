@@ -35,8 +35,8 @@ export async function GET(req) {
       const therapistDetails = await Therapist.findOne({ userId: therapist._id });
       
       return {
-        _id: therapistDetails?._id || therapist._id, // Use Therapist document _id, not User _id
-        userId: therapist._id, // Store User _id separately
+        _id: therapist._id, // MUST be User _id for patient.medicalInfo.assignedTherapist
+        therapistDocId: therapistDetails?._id, // Optional: Therapist document _id for reference
         name: `${therapist.firstName} ${therapist.lastName}`,
         email: therapist.email,
         specializations: therapistDetails?.professionalInfo?.specializations || [],
@@ -46,13 +46,14 @@ export async function GET(req) {
       };
     }));
 
-    console.log(therapistList)
+    console.log('✅ Therapist list prepared:', therapistList.length, 'therapists');
+    console.log('📋 Therapist IDs (User._id):', therapistList.map(t => t._id));
     // Filter only therapists accepting new patients
     // const availableTherapists = therapistList.filter(therapist => 
     //   therapist.acceptingNewPatients && therapist.verified
     // );
 
-    console.log("available therapist: ",therapistList);
+    console.log("✅ Returning available therapists:", therapistList.length);
 
     return NextResponse.json({ therapists: therapistList }, { status: 200 });
 

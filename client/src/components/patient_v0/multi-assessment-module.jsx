@@ -135,7 +135,7 @@ const ASSESSMENTS = {
   // }
 
 
-  // ...existing code...
+  
   sleep: {
     id: 'sleep',
     title: 'ISI',
@@ -219,7 +219,6 @@ const ASSESSMENTS = {
       return { level: "No Insomnia", color: "bg-green-500" };
     }
   }
-  // ...existing code...
 };
 
 export default function MultiAssessmentModule({ userId }) {
