@@ -119,6 +119,17 @@ export async function POST(req) {
 
     // Validate assignedTherapist if provided
     if (body.medicalInfo?.assignedTherapist) {
+      console.log('🔍 Validating therapist ID:', body.medicalInfo.assignedTherapist);
+      
+      // Check if it's a valid ObjectId format
+      if (!/^[0-9a-fA-F]{24}$/.test(body.medicalInfo.assignedTherapist)) {
+        console.error('❌ Invalid therapist ID format:', body.medicalInfo.assignedTherapist);
+        return NextResponse.json(
+          { error: "Invalid therapist ID format. Please select a valid therapist." },
+          { status: 400 }
+        );
+      }
+      
       const therapistExists = await User.findOne({ 
         _id: body.medicalInfo.assignedTherapist, 
         role: 'therapist',
@@ -126,11 +137,14 @@ export async function POST(req) {
       });
       
       if (!therapistExists) {
+        console.error('❌ Therapist not found or inactive:', body.medicalInfo.assignedTherapist);
         return NextResponse.json(
-          { error: "Invalid therapist selection" },
+          { error: "Invalid therapist selection. Therapist not found or inactive." },
           { status: 400 }
         );
       }
+      
+      console.log('✅ Therapist validated:', therapistExists._id);
     }
 
     // Create new patient
@@ -140,7 +154,9 @@ export async function POST(req) {
       ...body,
     });
 
+    console.log('💾 Attempting to save patient...');
     await patient.save();
+    console.log('✅ Patient saved successfully:', patient._id);
 
     // Update user profile completion status
     await User.findByIdAndUpdate(user._id, { profileComplete: true });
@@ -156,9 +172,41 @@ export async function POST(req) {
       { status: 201 }
     );
   } catch (error) {
-    console.error("Error creating patient details:", error);
+    console.error("❌ Error creating patient details:", error);
+    console.error("Error name:", error.name);
+    console.error("Error message:", error.message);
+    
+    // Handle Mongoose validation errors
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.keys(error.errors).map(key => ({
+        field: key,
+        message: error.errors[key].message
+      }));
+      
+      console.error('Validation errors:', validationErrors);
+      
+      return NextResponse.json(
+        { 
+          error: "Validation failed",
+          details: validationErrors
+        },
+        { status: 400 }
+      );
+    }
+    
+    // Handle duplicate key errors
+    if (error.code === 11000) {
+      return NextResponse.json(
+        { error: "Patient details already exist for this user" },
+        { status: 409 }
+      );
+    }
+    
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { 
+        error: "Internal Server Error",
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     );
   }
@@ -194,6 +242,17 @@ export async function PUT(req) {
 
     // Validate assignedTherapist if provided
     if (body.medicalInfo?.assignedTherapist) {
+      console.log('🔍 Validating therapist ID:', body.medicalInfo.assignedTherapist);
+      
+      // Check if it's a valid ObjectId format
+      if (!/^[0-9a-fA-F]{24}$/.test(body.medicalInfo.assignedTherapist)) {
+        console.error('❌ Invalid therapist ID format:', body.medicalInfo.assignedTherapist);
+        return NextResponse.json(
+          { error: "Invalid therapist ID format. Please select a valid therapist." },
+          { status: 400 }
+        );
+      }
+      
       const therapistExists = await User.findOne({ 
         _id: body.medicalInfo.assignedTherapist, 
         role: 'therapist',
@@ -201,11 +260,14 @@ export async function PUT(req) {
       });
       
       if (!therapistExists) {
+        console.error('❌ Therapist not found or inactive:', body.medicalInfo.assignedTherapist);
         return NextResponse.json(
-          { error: "Invalid therapist selection" },
+          { error: "Invalid therapist selection. Therapist not found or inactive." },
           { status: 400 }
         );
       }
+      
+      console.log('✅ Therapist validated:', therapistExists._id);
     }
 
     // Find and update patient details
@@ -236,9 +298,33 @@ export async function PUT(req) {
       patient,
     });
   } catch (error) {
-    console.error("Error updating patient details:", error);
+    console.error("❌ Error updating patient details:", error);
+    console.error("Error name:", error.name);
+    console.error("Error message:", error.message);
+    
+    // Handle Mongoose validation errors
+    if (error.name === 'ValidationError') {
+      const validationErrors = Object.keys(error.errors).map(key => ({
+        field: key,
+        message: error.errors[key].message
+      }));
+      
+      console.error('Validation errors:', validationErrors);
+      
+      return NextResponse.json(
+        { 
+          error: "Validation failed",
+          details: validationErrors
+        },
+        { status: 400 }
+      );
+    }
+    
     return NextResponse.json(
-      { error: "Internal Server Error" },
+      { 
+        error: "Internal Server Error",
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      },
       { status: 500 }
     );
   }

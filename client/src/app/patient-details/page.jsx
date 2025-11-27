@@ -201,9 +201,11 @@ export default function PatientDetailsPage() {
     const fetchTherapists = async () => {
       try {
         const response = await fetch('/api/therapists/available');
-        console.log(response)
+        console.log('📋 Therapists fetch response status:', response.status);
         if (response.ok) {
           const data = await response.json();
+          console.log('📋 Available therapists:', data.therapists?.length || 0, 'found');
+          console.log('📋 Therapist details:', data.therapists?.map(t => ({ id: t._id, name: t.name })));
           setAvailableTherapists(data.therapists || []);
         } else {
           console.error('Failed to fetch therapists:', response.statusText);
@@ -493,18 +495,36 @@ export default function PatientDetailsPage() {
         return;
       }
       
+      // Clean the payload: remove empty assignedTherapist completely
+      const cleanedMedicalInfo = { ...formData.medicalInfo };
+      const therapistId = formData.medicalInfo.assignedTherapist?.trim();
+      
+      if (!therapistId || therapistId === '') {
+        // Remove the field completely if empty
+        delete cleanedMedicalInfo.assignedTherapist;
+      } else {
+        cleanedMedicalInfo.assignedTherapist = therapistId;
+      }
+      
+      const cleanedFormData = {
+        ...formData,
+        medicalInfo: cleanedMedicalInfo,
+        consents: {
+          ...formData.consents,
+          consentDate: new Date()
+        }
+      };
+      
+      console.log('📤 Original assignedTherapist:', formData.medicalInfo.assignedTherapist);
+      console.log('📤 Cleaned assignedTherapist:', cleanedMedicalInfo.assignedTherapist);
+      console.log('📤 Full cleaned payload:', JSON.stringify(cleanedFormData, null, 2));
+      
       const response = await fetch('/api/patients', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          ...formData,
-          consents: {
-            ...formData.consents,
-            consentDate: new Date()
-          }
-        }),
+        body: JSON.stringify(cleanedFormData),
       });
 
       if (response.ok) {
@@ -513,9 +533,16 @@ export default function PatientDetailsPage() {
         router.push('/patient/dashboard');
       } else {
         const error = await response.json();
-        console.error('API Response Status:', response.status);
-        console.error('API Response Error:', error);
-        setErrors({ submit: error.error || 'Failed to save patient details' });
+        console.error('❌ API Response Status:', response.status);
+        console.error('❌ API Response Error:', JSON.stringify(error, null, 2));
+        
+        // Show detailed error message
+        let errorMessage = error.error || 'Failed to save patient details';
+        if (error.details && Array.isArray(error.details)) {
+          errorMessage += ': ' + error.details.map(d => d.message || d).join(', ');
+        }
+        
+        setErrors({ submit: errorMessage });
       }
     } catch (error) {
       console.error('Error submitting form:', error);
