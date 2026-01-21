@@ -40,20 +40,25 @@ export default function RoleBasedRedirect() {
       setIsRedirecting(true);
 
       try {
-        // First, try to get user role from Clerk metadata
+        // CRITICAL: Always prioritize Clerk metadata over cached dbUser
+        // This ensures we use the CURRENT session's role, not stale cached data
         let userRole = user?.publicMetadata?.role || user?.unsafeMetadata?.role;
 
-        // If no role in Clerk metadata, check our database
-        if (!userRole && dbUser) {
+        // Only use dbUser role if we have confirmed it matches the current Clerk user ID
+        if (!userRole && dbUser && dbUser.clerkId === user.id) {
+          console.log('[RoleBasedRedirect] Using dbUser role after verifying Clerk ID match');
           userRole = dbUser.role;
         }
 
-        // If still no role, assume patient for now (common for Google OAuth users)
-        // The user will be created as a patient in the database via the API
+        // If still no role, wait for database to sync instead of assuming
+        // This prevents redirecting to wrong dashboard on first login
         if (!userRole) {
-          console.log('No role found, assuming patient role for new user');
-          userRole = 'patient';
+          console.log('[RoleBasedRedirect] No role found yet, waiting for database sync...');
+          setIsRedirecting(false);
+          return;
         }
+        
+        console.log('[RoleBasedRedirect] Using role:', userRole, 'for user:', user.id);
 
         // Check if profile is complete for therapists
         if (userRole === 'therapist' && !isProfileComplete) {

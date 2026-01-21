@@ -72,6 +72,15 @@ export function useUserProfile() {
   };
 
   useEffect(() => {
+    // Reset state when user changes (important for logout/login scenarios)
+    if (user?.id && dbUser?.clerkId && user.id !== dbUser.clerkId) {
+      console.log('🔄 [useUserProfile] User ID mismatch detected - clearing stale data');
+      console.log('  - Current Clerk user:', user.id);
+      console.log('  - Cached DB user:', dbUser.clerkId);
+      setDbUser(null);
+      setError(null);
+    }
+    
     // Add a small delay to ensure session is fully established
     const timeoutId = setTimeout(fetchUserProfile, 100);
     return () => clearTimeout(timeoutId);
