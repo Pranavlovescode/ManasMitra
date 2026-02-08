@@ -3,8 +3,10 @@
 import torch
 import os
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+from pathlib import Path
 
-MODEL_PATH = "./mistral_local"
+# Use an absolute local path and prefer local files to avoid HF repo id validation
+MODEL_PATH = Path(__file__).parent.joinpath("mistral_local").resolve().as_posix()
 
 print("🔹 Initializing Mistral model loader...")
 print(f"📁 Model path: {MODEL_PATH}")
@@ -29,7 +31,11 @@ if use_cuda:
         bnb_config = None
 
 # ---------------------- MODEL LOAD LOGIC ----------------------
-tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
+# load tokenizer (prefer local files, fallback to normal from_pretrained)
+try:
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH, local_files_only=True)
+except Exception:
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
 
 def safe_load_model():
     """
@@ -125,7 +131,10 @@ def generate_response(prompt: str, max_new_tokens: int = 256):
                 pad_token_id=tokenizer.eos_token_id
             )
 
-        response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        # Only decode the generated tokens (skip the input tokens)
+        input_length = inputs["input_ids"].shape[1]
+        generated_tokens = outputs[0][input_length:]
+        response = tokenizer.decode(generated_tokens, skip_special_tokens=True)
         return response
 
     except Exception as e:
@@ -134,7 +143,8 @@ def generate_response(prompt: str, max_new_tokens: int = 256):
 
 # ---------------------- TEST ----------------------
 if __name__ == "__main__":
-    test_prompt = "Hello, how are you feeling today?"
+    # test_prompt = "Hello, how are you feeling today?"
+    test_prompt = "I have been feeling very anxious lately and I don't know why. Can you help me understand my feelings?"
     print("\n🧠 Testing model response...\n")
     response = generate_response(test_prompt)
     print("👤 User:", test_prompt)
