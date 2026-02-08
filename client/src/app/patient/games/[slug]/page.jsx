@@ -74,9 +74,9 @@ export default function GameRunnerPage() {
           {status && <span className="text-sm text-gray-600">{status}</span>}
           <Button
             variant="outline"
-            onClick={() => router.push("/patient/games")}
+            onClick={() => router.push("/patient/dashboard")}
           >
-            Back
+            Back to Dashboard
           </Button>
         </div>
       </div>

@@ -28,8 +28,10 @@ document.addEventListener("DOMContentLoaded", () => {
     currentRound = 1;
     score = 0;
     updateScore();
+    document.getElementById("round").textContent = currentRound;
     gameOverScreen.classList.add("hidden");
     startBtn.classList.add("hidden");
+    roundResult.classList.add("hidden");
     startRound();
   }
 
@@ -80,11 +82,39 @@ document.addEventListener("DOMContentLoaded", () => {
     const guess = prompt(
       `Round ${currentRound}: How many '${target.name}' did you see?`
     );
+    
+    // Handle cancel button
     if (guess === null) {
-      endGame();
+      // User cancelled - treat as 0
+      processAnswer(0);
       return;
     }
-    const guessed = parseInt(guess.trim());
+    
+    // Validate input
+    const trimmed = guess.trim();
+    if (trimmed === "") {
+      alert("Please enter a number!");
+      askUserAnswer();
+      return;
+    }
+    
+    const guessed = parseInt(trimmed);
+    if (isNaN(guessed)) {
+      alert("Please enter a valid number!");
+      askUserAnswer();
+      return;
+    }
+    
+    if (guessed < 0) {
+      alert("Please enter a positive number!");
+      askUserAnswer();
+      return;
+    }
+    
+    processAnswer(guessed);
+  }
+
+  function processAnswer(guessed) {
     let message = "";
 
     if (guessed === targetCount) {
@@ -104,6 +134,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => {
       if (currentRound < totalRounds) {
         currentRound++;
+        document.getElementById("round").textContent = currentRound;
         startRound();
       } else {
         endGame();
@@ -113,19 +144,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function endGame() {
     clearInterval(timer);
+    gameBoard.innerHTML = "";
     gameOverScreen.classList.remove("hidden");
     finalScoreDisplay.textContent = score;
+    
+    const maxScore = totalRounds * 3;
+    const percentage = (score / maxScore) * 100;
+    
     performanceElement.textContent =
-      score >= totalRounds * 2
-        ? "Excellent!"
-        : score >= totalRounds * 1
-        ? "Good job!"
-        : "Try again!";
+      percentage >= 80
+        ? "Excellent! Outstanding performance! 🎉"
+        : percentage >= 60
+        ? "Great job! Well done! 👏"
+        : percentage >= 40
+        ? "Good effort! Keep practicing! 💪"
+        : "Keep trying! Practice makes perfect! 🌟";
+    
     startBtn.classList.remove("hidden");
 
-    // Emit minimal result to parent
+    // Emit result to parent
     try {
-      const payload = { score, rounds: totalRounds };
+      const payload = { 
+        score, 
+        rounds: totalRounds,
+        maxScore: maxScore,
+        percentage: Math.round(percentage)
+      };
       window.parent &&
         window.parent.postMessage(
           { type: "mentalcure:result", gameId: "second", payload },

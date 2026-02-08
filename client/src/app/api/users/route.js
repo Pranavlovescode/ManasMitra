@@ -48,7 +48,15 @@ export async function GET(req) {
     }
 
     console.log('✅ [API] User profile fetched successfully');
-    return NextResponse.json(user);
+    
+    // Return response with no-cache headers to prevent stale data
+    return NextResponse.json(user, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
+    });
   } catch (error) {
     console.error("❌ [API] Error fetching user:", error);
     return NextResponse.json(

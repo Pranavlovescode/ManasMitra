@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useClerk, useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui_1/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import DashboardSidebar from "@/components/DashboardSidebar";
 import TherapistVerification from "@/components/admin/therapist-verification";
 import UserManagement from "@/components/admin/user-management";
 import SystemAnalytics from "@/components/admin/system-analytics";
@@ -11,7 +12,9 @@ import ComplianceReports from "@/components/admin/compliance-reports";
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const [user, setUser] = useState();
+  const { signOut } = useClerk();
+  const { user } = useUser();
+  const [activeTab, setActiveTab] = useState("verification");
   const [isLoading, setIsLoading] = useState(false);
 
   // useEffect(() => {
@@ -50,9 +53,34 @@ export default function AdminDashboard() {
   //   checkAuth();
   // }, [router]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    router.push("/");
+  const handleLogout = async () => {
+    try {
+      // Clear all local storage and session data
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Sign out from Clerk
+      await signOut({ redirectUrl: "/" });
+    } catch (error) {
+      console.error("Error signing out:", error);
+      // Clear storage and redirect even if there's an error
+      localStorage.clear();
+      sessionStorage.clear();
+      router.push("/");
+    }
+  };
+
+  const sidebarItems = [
+    { value: "verification", label: "Verification", icon: "✓" },
+    { value: "users", label: "Users", icon: "👥" },
+    { value: "analytics", label: "Analytics", icon: "📊" },
+    { value: "compliance", label: "Compliance", icon: "📋" },
+  ];
+
+  const userInfo = {
+    name: user?.firstName ? `${user.firstName} ${user.lastName || ""}` : "Admin",
+    role: "Admin",
+    initial: user?.firstName?.[0] || "A",
   };
 
   if (isLoading) {
@@ -70,50 +98,72 @@ export default function AdminDashboard() {
   //   return null;
   // }
 
+  const renderContent = () => {
+    switch (activeTab) {
+      case "verification":
+        return <TherapistVerification />;
+      case "users":
+        return <UserManagement />;
+      case "analytics":
+        return <SystemAnalytics />;
+      case "compliance":
+        return <ComplianceReports />;
+      default:
+        return <TherapistVerification />;
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-            <p className="text-muted-foreground">
-              System Management & Oversight
-            </p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex">
+      {/* Sidebar */}
+      <DashboardSidebar
+        items={sidebarItems}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        userInfo={userInfo}
+      />
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <header className="backdrop-blur-md bg-white/80 border-b border-white/20 shadow-sm sticky top-0 z-30">
+          <div className="px-6 py-4 flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
+              <p className="text-gray-600 text-sm mt-1">
+                System Management & Oversight
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={handleLogout}
+              className="bg-white/80 hover:bg-white border-gray-200 hover:border-gray-300 shadow-sm"
+            >
+              <svg
+                className="w-4 h-4 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
+              </svg>
+              Logout
+            </Button>
           </div>
-          <Button variant="outline" onClick={handleLogout}>
-            Logout
-          </Button>
-        </div>
-      </header>
+        </header>
 
-      {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="verification" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="verification">Verification</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="compliance">Compliance</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="verification" className="space-y-4">
-            <TherapistVerification />
-          </TabsContent>
-
-          <TabsContent value="users" className="space-y-4">
-            <UserManagement />
-          </TabsContent>
-
-          <TabsContent value="analytics" className="space-y-4">
-            <SystemAnalytics />
-          </TabsContent>
-
-          <TabsContent value="compliance" className="space-y-4">
-            <ComplianceReports />
-          </TabsContent>
-        </Tabs>
-      </main>
+        {/* Content */}
+        <main className="flex-1 p-6 overflow-y-auto">
+          <div className="max-w-7xl mx-auto">
+            {renderContent()}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
