@@ -90,34 +90,37 @@ model.eval()
 device = next(model.parameters()).device
 print(f"✅ Mistral model loaded successfully on device: {device}")
 
+# ---------------------- SYSTEM PROMPT ----------------------
+
+SYSTEM_PROMPT = (
+    "You are a compassionate, empathetic, and professional mental health therapist. "
+    "Your role is to actively listen, validate emotions, and provide supportive guidance. "
+    "Use evidence-based techniques from Cognitive Behavioral Therapy (CBT) when appropriate. "
+    "Never diagnose medical or mental health conditions. "
+    "If a user expresses thoughts of self-harm or suicide, gently encourage them to reach out to "
+    "a crisis helpline or emergency services. "
+    "Keep your responses warm, concise, and focused on the user's feelings."
+)
+
 # ---------------------- RESPONSE GENERATION ----------------------
 
 def generate_response(prompt: str, max_new_tokens: int = 256):
     """
     Generate a natural language response from the Mistral model.
+    Uses chat template with a therapist system prompt.
     """
-    # working code fall back here if error occurs
-    # try:
-    #     inputs = tokenizer(prompt, return_tensors="pt").to(device)
-
-    #     with torch.no_grad():
-    #         outputs = model.generate(
-    #             **inputs,
-    #             max_new_tokens=max_new_tokens,
-    #             temperature=0.7,
-    #             top_p=0.9,
-    #             pad_token_id=tokenizer.eos_token_id
-    #         )
-
-    #     response = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    #     return response
-
-    # except Exception as e:
-    #     return f"⚠️ Error generating response: {str(e)}"
-
-
     try:
-        batch = tokenizer(prompt, return_tensors="pt")
+        # Build chat messages with system prompt
+        messages = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": prompt},
+        ]
+        # Apply the model's chat template to format the prompt properly
+        formatted_prompt = tokenizer.apply_chat_template(
+            messages, tokenize=False, add_generation_prompt=True
+        )
+
+        batch = tokenizer(formatted_prompt, return_tensors="pt")
         # move tensors to model device
         device = next(model.parameters()).device
         inputs = {k: v.to(device) for k, v in batch.items()}
@@ -128,13 +131,14 @@ def generate_response(prompt: str, max_new_tokens: int = 256):
                 max_new_tokens=max_new_tokens,
                 temperature=0.7,
                 top_p=0.9,
+                do_sample=True,
                 pad_token_id=tokenizer.eos_token_id
             )
 
         # Only decode the generated tokens (skip the input tokens)
         input_length = inputs["input_ids"].shape[1]
         generated_tokens = outputs[0][input_length:]
-        response = tokenizer.decode(generated_tokens, skip_special_tokens=True)
+        response = tokenizer.decode(generated_tokens, skip_special_tokens=True).strip()
         return response
 
     except Exception as e:

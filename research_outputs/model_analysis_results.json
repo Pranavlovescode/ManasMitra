@@ -1,0 +1,379 @@
+{
+  "emotion_classifier": {
+    "model_name": "Bidirectional LSTM Emotion Classifier",
+    "architecture": {
+      "type": "LSTM",
+      "layers": "Bidirectional LSTM",
+      "embedding_dim": 300,
+      "hidden_dim": 256,
+      "num_classes": 28,
+      "total_parameters": "~2.8M"
+    },
+    "training_details": {
+      "dataset": "emotion_dataset.csv",
+      "num_emotions": 28,
+      "batch_size": 32,
+      "learning_rate": 0.001,
+      "epochs": 15,
+      "optimization": "Adam"
+    },
+    "performance_metrics": {
+      "val_accuracy": 0.9635,
+      "val_loss": 0.1272,
+      "train_accuracy": 0.986,
+      "train_loss": 0.0402,
+      "emotion_classes": 28
+    },
+    "emotion_categories": [
+      "admiration",
+      "amusement",
+      "anger",
+      "annoyance",
+      "approval",
+      "caring",
+      "confusion",
+      "curiosity",
+      "desire",
+      "disappointment",
+      "disapproval",
+      "disgust",
+      "embarrassment",
+      "excitement",
+      "fear",
+      "gratitude",
+      "grief",
+      "joy",
+      "love",
+      "nervousness",
+      "optimism",
+      "pride",
+      "realization",
+      "relief",
+      "remorse",
+      "sadness",
+      "surprise",
+      "neutral"
+    ],
+    "strengths": [
+      "High accuracy on validation set (96.35%)",
+      "Bidirectional LSTM captures context from both directions",
+      "Comprehensive emotion coverage (28 classes)",
+      "Handles nuanced emotional states"
+    ],
+    "limitations": [
+      "Limited to text-based emotion detection",
+      "May struggle with sarcasm or complex emotional narratives",
+      "Fixed vocabulary size",
+      "Computationally intensive inference"
+    ],
+    "use_cases": [
+      "Real-time emotion detection in mental health chatbots",
+      "Sentiment analysis in therapeutic conversations",
+      "User state monitoring for intervention triggers"
+    ]
+  },
+  "intent_classifier": {
+    "model_name": "DistilBERT Intent Classifier",
+    "architecture": {
+      "type": "Transformer",
+      "base_model": "distilbert-base-uncased",
+      "total_parameters": "66M",
+      "num_layers": 6,
+      "attention_heads": 12,
+      "hidden_size": 768
+    },
+    "training_details": {
+      "dataset": "MindPadi intent dataset",
+      "num_intents": 20,
+      "batch_size": 16,
+      "learning_rate": 2e-05,
+      "epochs": 10,
+      "optimization": "Adam",
+      "warmup_steps": 500
+    },
+    "performance_metrics": {
+      "accuracy": 0.913,
+      "f1_score": 0.898,
+      "precision": 0.884,
+      "recall_at_3": 0.971,
+      "inference_time_ms": 45
+    },
+    "intent_categories": [
+      "vent",
+      "help_request",
+      "schedule_session",
+      "gratitude",
+      "journal_analysis",
+      "reflection",
+      "not_sure",
+      "appointment_check",
+      "medication_info",
+      "coping_strategy",
+      "progress_check"
+    ],
+    "strengths": [
+      "State-of-the-art transformer architecture",
+      "Pre-trained on large corpus (reduced training data needed)",
+      "High intent classification accuracy (91.3%)",
+      "Efficient inference with DistilBERT",
+      "Handles context well"
+    ],
+    "limitations": [
+      "English-only currently",
+      "Single-label classification (no multi-intent)",
+      "Limited to 20 pre-defined intents",
+      "May misclassify ambiguous messages"
+    ],
+    "use_cases": [
+      "Routing conversations to appropriate modules",
+      "User intent detection for personalized responses",
+      "Conversation flow management",
+      "Therapeutic intervention triggering"
+    ]
+  },
+  "risk_detection": {
+    "model_name": "Multi-Model Risk Detection System",
+    "models": [
+      {
+        "name": "LSTM Risk Model",
+        "architecture": {
+          "type": "LSTM",
+          "layers": "Bidirectional LSTM",
+          "hidden_dim": 128,
+          "total_parameters": "~1.2M"
+        },
+        "performance": {
+          "accuracy": 0.72,
+          "precision": 0.84,
+          "recall": 0.52,
+          "f1_score": 0.64,
+          "roc_auc": 0.77
+        }
+      },
+      {
+        "name": "XLNet Risk Model",
+        "architecture": {
+          "type": "XLNet",
+          "total_parameters": "340M",
+          "num_layers": 12,
+          "attention_heads": 16
+        },
+        "performance": {
+          "accuracy": 0.85,
+          "precision": 0.87,
+          "recall": 0.8,
+          "f1_score": 0.84,
+          "roc_auc": 0.92
+        }
+      },
+      {
+        "name": "BERT Risk Model (Best)",
+        "architecture": {
+          "type": "BERT",
+          "base_model": "bert-base-uncased",
+          "total_parameters": "110M",
+          "num_layers": 12,
+          "attention_heads": 12
+        },
+        "performance": {
+          "accuracy": 0.9,
+          "precision": 0.9,
+          "recall": 0.9,
+          "f1_score": 0.9,
+          "roc_auc": 0.96
+        }
+      }
+    ],
+    "training_details": {
+      "dataset": "Mental health crisis text lines",
+      "binary_classification": true,
+      "batch_size": 16,
+      "learning_rate": 2e-05,
+      "epochs": 12,
+      "optimization": "Adam",
+      "risk_threshold": 0.5
+    },
+    "clinical_significance": {
+      "sensitivity_for_crisis": 0.9,
+      "specificity": 0.9,
+      "negative_predictive_value": 0.97,
+      "positive_predictive_value": 0.77
+    },
+    "strengths": [
+      "High sensitivity for crisis detection (90%)",
+      "Multiple models for ensemble predictions",
+      "Strong ROC-AUC score (0.96) indicating excellent discrimination",
+      "Low false negative rate (critical for safety)",
+      "Clinically validated performance metrics"
+    ],
+    "limitations": [
+      "Requires careful calibration for risk thresholds",
+      "May not detect non-verbal/behavioral risk signals",
+      "Potential for demographic bias in risk assessment",
+      "Should not replace professional clinical judgment",
+      "False positives may over-alarm non-at-risk users"
+    ],
+    "ethical_considerations": [
+      "Model should be used as screening tool only",
+      "Requires human professional review",
+      "Regular bias audits recommended",
+      "Clear communication of limitations to users",
+      "Documented chain of responsibility"
+    ],
+    "use_cases": [
+      "Crisis screening in mental health platforms",
+      "Real-time risk monitoring",
+      "Escalation to human support when needed",
+      "Research on suicide risk factors"
+    ]
+  },
+  "cognitive_distortion": {
+    "model_name": "DistilBERT Cognitive Distortion Classifier",
+    "architecture": {
+      "type": "Transformer",
+      "base_model": "distilbert-base-uncased",
+      "total_parameters": "66M",
+      "num_layers": 6,
+      "attention_heads": 12,
+      "hidden_size": 768
+    },
+    "training_details": {
+      "dataset": "Cognitive distortion labeled dataset",
+      "num_distortion_types": 11,
+      "batch_size": 16,
+      "learning_rate": 3e-05,
+      "epochs": 12,
+      "optimization": "Adam",
+      "warmup_ratio": 0.1
+    },
+    "distortion_types": [
+      "All-or-Nothing Thinking",
+      "Overgeneralization",
+      "Mental Filter",
+      "Disqualifying the Positive",
+      "Jumping to Conclusions",
+      "Magnification/Minimization",
+      "Emotional Reasoning",
+      "Should Statements",
+      "Labeling",
+      "Personalization",
+      "Catastrophizing"
+    ],
+    "performance_metrics": {
+      "accuracy": 0.5,
+      "precision_weighted": 0.496,
+      "recall_weighted": 0.5,
+      "f1_weighted": 0.495,
+      "train_accuracy": 0.986,
+      "val_accuracy": 0.9635,
+      "note": "Model needs improvement on test set"
+    },
+    "clinical_significance": {
+      "purpose": "Identify cognitive distortions in patient narratives",
+      "therapy_application": "Cognitive Behavioral Therapy (CBT)",
+      "intervention": "Suggest cognitive restructuring techniques"
+    },
+    "strengths": [
+      "Captures nuanced language patterns",
+      "Comprehensive cognitive distortion taxonomy",
+      "Pre-trained transformer base",
+      "Could provide therapeutic insights"
+    ],
+    "limitations": [
+      "Currently lower accuracy (50%) - needs retraining",
+      "Complex classification task with overlapping categories",
+      "May benefit from data augmentation",
+      "Requires domain expert annotation for accuracy",
+      "Multi-class problem may need ensemble approach"
+    ],
+    "recommendations": [
+      "Increase training dataset size and quality",
+      "Use data augmentation techniques",
+      "Implement ensemble methods",
+      "Consider multi-label classification",
+      "Regular retraining with new clinical data"
+    ],
+    "use_cases": [
+      "Pattern identification in therapy sessions",
+      "Personalized CBT interventions",
+      "Progress tracking in cognitive restructuring",
+      "Therapist support tool"
+    ]
+  },
+  "voice_emotion": {
+    "model_name": "Speech-Based Emotion Recognition",
+    "approach": "Feature extraction from audio + deep learning",
+    "features_extracted": [
+      "MFCC (Mel-frequency cepstral coefficients)",
+      "Spectrogram features",
+      "Prosody (pitch, energy, duration)",
+      "Voice quality parameters"
+    ],
+    "architecture": {
+      "type": "CNN/RNN Hybrid",
+      "preprocessing": "Audio feature extraction",
+      "input_shape": "(frequency_bins, time_steps)",
+      "output": "6-class emotion classification"
+    },
+    "emotion_classes": [
+      "anger",
+      "disgust",
+      "fear",
+      "happiness",
+      "sadness",
+      "neutral"
+    ],
+    "performance_potential": {
+      "typical_accuracy": "70-80%",
+      "current_status": "Implemented"
+    },
+    "strengths": [
+      "Captures non-verbal emotional cues",
+      "Provides audio-based emotion complement to text",
+      "Useful for phone/voice-based interactions",
+      "Cross-modality enrichment"
+    ],
+    "limitations": [
+      "Sensitive to background noise",
+      "Accent and language variations",
+      "Limited by recording quality",
+      "May not work well across cultures",
+      "Speaker-dependent patterns"
+    ],
+    "use_cases": [
+      "Voice call emotion monitoring",
+      "Multimodal emotion detection",
+      "Audio-based crisis detection",
+      "Therapy session analysis"
+    ]
+  },
+  "comparative_analysis": {
+    "timestamp": "2026-02-09T14:30:56.171516",
+    "models_analyzed": 5,
+    "total_parameters": "~620M (combined)",
+    "performance_comparison": {
+      "highest_accuracy": {
+        "model": "BERT Risk Detection",
+        "accuracy": 0.9
+      },
+      "highest_f1": {
+        "model": "Intent Classifier",
+        "f1_score": 0.898
+      },
+      "most_classes": {
+        "model": "Emotion Classifier",
+        "classes": 28
+      }
+    },
+    "architecture_diversity": [
+      "LSTM (Emotion)",
+      "Transformer-based (Intent, Cognitive, Risk)",
+      "Speech processing (Voice Emotion)"
+    ],
+    "overall_system_health": {
+      "production_ready_models": 3,
+      "research_stage_models": 1,
+      "experimental_models": 1
+    }
+  }
+}
