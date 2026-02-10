@@ -23,6 +23,7 @@ import {
 } from 'chart.js';
 import 'chartjs-adapter-date-fns';
 import { format, parseISO, isValid } from 'date-fns';
+import { getGameById, getGameName, getCognitiveDomain, getDomainColors, getGamesByDomain } from '@/lib/game-config';
 
 // Register ChartJS components
 ChartJS.register(
@@ -293,11 +294,12 @@ export default function ComprehensiveReportModal({ isOpen, onClose, patientId, p
     const data = filteredData || reportData;
     if (!data?.games?.byGame) return null;
 
-    const gameNames = Object.keys(data.games.byGame);
-    const avgScores = gameNames.map(game => parseFloat(data.games.byGame[game].averageScore));
+    const gameIds = Object.keys(data.games.byGame);
+    const avgScores = gameIds.map(id => parseFloat(data.games.byGame[id].averageScore));
+    const gameLabels = gameIds.map(id => getGameName(id));
 
     return {
-      labels: gameNames.map(name => name.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())),
+      labels: gameLabels,
       datasets: [{
         label: 'Average Score',
         data: avgScores,
@@ -740,7 +742,13 @@ export default function ComprehensiveReportModal({ isOpen, onClose, patientId, p
                                 <div className="flex-1">
                                   <p className="text-sm text-gray-700">{risk.excerpt}</p>
                                   <p className="text-xs text-gray-500 mt-1">
-                                    {new Date(risk.date).toLocaleDateString()}
+                                    {risk.date 
+                                      ? new Date(risk.date).toLocaleDateString('en-US', { 
+                                          year: 'numeric', 
+                                          month: 'short', 
+                                          day: 'numeric' 
+                                        })
+                                      : 'Date not available'}
                                   </p>
                                 </div>
                               </div>
@@ -850,15 +858,79 @@ export default function ComprehensiveReportModal({ isOpen, onClose, patientId, p
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-3">Performance by Game</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {Object.entries(reportData.games.byGame).map(([gameId, data]) => (
-                        <div key={gameId} className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium capitalize">{gameId.replace('_', ' ')}</span>
-                            <Badge className="bg-gray-700 text-white">{data.count}x</Badge>
+                      {Object.entries(reportData.games.byGame).map(([gameId, data]) => {
+                        const game = getGameById(gameId);
+                        const domainColors = getDomainColors(getCognitiveDomain(gameId));
+                        return (
+                          <div key={gameId} className={`p-4 ${domainColors.bg} border-2 ${domainColors.border} rounded-lg hover:shadow-md transition-shadow`}>
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xl">{game?.emoji || '🎮'}</span>
+                                <span className="text-sm font-semibold text-gray-900">{getGameName(gameId)}</span>
+                              </div>
+                              <Badge className="bg-gray-700 text-white">{data.count}x</Badge>
+                            </div>
+                            <p className="text-xs text-gray-600 mb-1">Avg Score: <span className="font-bold text-lg">{data.averageScore}</span></p>
+                            <p className="text-xs text-gray-500">{game?.cognitiveDomain || 'Cognitive'}</p>
                           </div>
-                          <p className="text-xs text-gray-600">Avg Score: <span className="font-bold">{data.averageScore}</span></p>
-                        </div>
-                      ))}
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Cognitive Domain Analysis */}
+                  <div className="mt-6">
+                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                      <Brain className="w-5 h-5 text-indigo-600" />
+                      Performance by Cognitive Domain
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {Object.entries(
+                        Object.entries(reportData.games.byGame).reduce((acc, [gameId, data]) => {
+                          const domain = getCognitiveDomain(gameId);
+                          if (!acc[domain]) {
+                            acc[domain] = { totalScore: 0, count: 0, games: [] };
+                          }
+                          acc[domain].totalScore += parseFloat(data.averageScore);
+                          acc[domain].count += 1;
+                          acc[domain].games.push({ id: gameId, ...data });
+                          return acc;
+                        }, {})
+                      ).map(([domain, stats]) => {
+                        const avgScore = (stats.totalScore / stats.count).toFixed(1);
+                        const domainColors = getDomainColors(domain);
+                        return (
+                          <div key={domain} className={`p-4 ${domainColors.bg} border-2 ${domainColors.border} rounded-lg`}>
+                            <div className="flex items-center justify-between mb-3">
+                              <h5 className={`font-bold ${domainColors.text}`}>{domain}</h5>
+                              <Badge className="bg-white text-gray-900 border border-gray-300">{stats.count} games</Badge>
+                            </div>
+                            <div className="mb-3">
+                              <p className="text-xs text-gray-600 mb-1">Average Performance</p>
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 bg-white rounded-full h-3 overflow-hidden border border-gray-300">
+                                  <div
+                                    className="h-full bg-gradient-to-r from-green-400 to-green-600"
+                                    style={{ width: `${Math.min(avgScore, 100)}%` }}
+                                  />
+                                </div>
+                                <span className="text-lg font-bold text-gray-900">{avgScore}</span>
+                              </div>
+                            </div>
+                            <div className="space-y-1">
+                              {stats.games.map(game => {
+                                const gameInfo = getGameById(game.id);
+                                return (
+                                  <div key={game.id} className="flex items-center justify-between text-xs">
+                                    <span className="text-gray-700">{gameInfo?.emoji} {getGameName(game.id)}</span>
+                                    <span className="font-semibold text-gray-900">{game.averageScore}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </CardContent>
@@ -910,7 +982,15 @@ export default function ComprehensiveReportModal({ isOpen, onClose, patientId, p
                             <p className="text-sm text-gray-900 flex-1">{topic.topic}</p>
                             <div className="text-right">
                               <Badge className="bg-indigo-600 text-white text-xs">{topic.messageCount} msgs</Badge>
-                              <p className="text-xs text-gray-500 mt-1">{new Date(topic.date).toLocaleDateString()}</p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                {topic.date 
+                                  ? new Date(topic.date).toLocaleDateString('en-US', { 
+                                      year: 'numeric', 
+                                      month: 'short', 
+                                      day: 'numeric' 
+                                    })
+                                  : 'Date not available'}
+                              </p>
                             </div>
                           </div>
                         </div>

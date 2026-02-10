@@ -263,7 +263,13 @@ export default function PatientDetails({ patientId, therapistId }) {
                           {assessment.type}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {new Date(assessment.createdAt).toLocaleDateString()}
+                          {assessment.createdAt || assessment.date 
+                            ? new Date(assessment.createdAt || assessment.date).toLocaleDateString('en-US', { 
+                                year: 'numeric', 
+                                month: 'short', 
+                                day: 'numeric' 
+                              })
+                            : 'Date not available'}
                         </p>
                       </div>
                       <div className="text-right">
@@ -290,7 +296,13 @@ export default function PatientDetails({ patientId, therapistId }) {
                         {journal.content}
                       </p>
                       <p className="text-xs text-muted-foreground mt-2">
-                        {new Date(journal.createdAt).toLocaleDateString()}
+                        {journal.createdAt 
+                          ? new Date(journal.createdAt).toLocaleDateString('en-US', { 
+                              year: 'numeric', 
+                              month: 'short', 
+                              day: 'numeric' 
+                            })
+                          : 'Date not available'}
                       </p>
                     </div>
                   ))}

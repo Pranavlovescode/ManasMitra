@@ -8,8 +8,13 @@ const AlertSchema = new mongoose.Schema({
   title: { type: String, required: true },
   message: { type: String, required: true },
   severity: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
+  priority: { type: String, enum: ['low', 'medium', 'high', 'urgent'], default: 'medium' },
   meta: { type: mongoose.Schema.Types.Mixed },
   dismissed: { type: Boolean, default: false },
+  addressed: { type: Boolean, default: false },
+  addressedAt: { type: Date },
+  addressedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  notes: { type: String, default: '' },
 }, { timestamps: true });
 
 AlertSchema.index({ therapistId: 1, dismissed: 1, createdAt: -1 });

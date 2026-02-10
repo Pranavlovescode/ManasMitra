@@ -7,6 +7,7 @@ import Assessment from '@/models/Assessment';
 import Journal from '@/models/Journal';
 import GameResult from '@/models/GameResult';
 import Conversation from '@/models/Conversation';
+import Alert from '@/models/Alert';
 import mongoose from 'mongoose';
 
 // Mood schema (inline as it's not a separate model file)
@@ -446,6 +447,41 @@ export async function GET(request, context) {
         ].filter(Boolean).length * 20 // 0-100%
       }
     };
+
+    // ============ SAVE ALERTS TO DATABASE ============
+    // Save generated alerts to database for therapist action
+    for (const alert of alerts) {
+      try {
+        // Check if similar alert already exists (within last 24 hours)
+        const existingAlert = await Alert.findOne({
+          patientId: patient._id,
+          severity: alert.type,
+          message: alert.message,
+          dismissed: false,
+          createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+        });
+
+        // Only create if no duplicate exists
+        if (!existingAlert) {
+          await Alert.create({
+            therapistId: therapistUser._id,
+            patientId: patient._id,
+            patientClerkId: patientClerkId,
+            patientName: `${patient.userId?.firstName || ''} ${patient.userId?.lastName || ''}`.trim(),
+            title: `${alert.priority?.toUpperCase() || 'ALERT'}: Patient Alert`,
+            message: alert.message,
+            severity: alert.type, // 'high', 'medium', 'low'
+            priority: alert.priority, // 'urgent', 'high', 'medium', 'low'
+            dismissed: false,
+            addressed: false
+          });
+          console.log(`Created alert for patient ${patient._id}: ${alert.message}`);
+        }
+      } catch (alertError) {
+        console.error('Error creating alert:', alertError);
+        // Continue processing even if alert creation fails
+      }
+    }
 
     return NextResponse.json(report);
 
