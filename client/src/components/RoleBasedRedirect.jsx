@@ -21,62 +21,67 @@ export default function RoleBasedRedirect() {
         hasUser: !!user, 
         isRedirecting, 
         pathname,
-        userRole: user?.publicMetadata?.role || user?.unsafeMetadata?.role,
+        clerkRole: user?.publicMetadata?.role || user?.unsafeMetadata?.role,
         dbUserRole: dbUser?.role,
         isProfileComplete 
       });
       
-      if (!isLoaded || loading || !user || isRedirecting) {
-        console.log('[RoleBasedRedirect] Skipping redirect due to loading state');
+      // Wait for Clerk to load and user to be available
+      if (!isLoaded || !user) {
+        console.log('[RoleBasedRedirect] Waiting for Clerk to load or user...');
         return;
       }
 
-      // Only redirect if we have enough information
-      if (!dbUser && !user?.publicMetadata?.role && !user?.unsafeMetadata?.role) {
-        console.log('Waiting for user data before redirecting...');
+      // Don't wait for loading - if we have Clerk data, proceed
+      if (isRedirecting) {
+        console.log('[RoleBasedRedirect] Already redirecting, skipping...');
         return;
       }
 
       setIsRedirecting(true);
 
       try {
-        // CRITICAL: Always prioritize Clerk metadata over cached dbUser
-        // This ensures we use the CURRENT session's role, not stale cached data
+        // PRIORITY 1: Get role from Clerk metadata (most reliable)
         let userRole = user?.publicMetadata?.role || user?.unsafeMetadata?.role;
 
-        // Only use dbUser role if we have confirmed it matches the current Clerk user ID
-        if (!userRole && dbUser && dbUser.clerkId === user.id) {
-          console.log('[RoleBasedRedirect] Using dbUser role after verifying Clerk ID match');
+        // PRIORITY 2: Try dbUser role only if available and loading is complete
+        if (!userRole && !loading && dbUser?.role) {
+          console.log('[RoleBasedRedirect] Using dbUser role as fallback');
           userRole = dbUser.role;
         }
 
-        // If still no role, wait for database to sync instead of assuming
-        // This prevents redirecting to wrong dashboard on first login
+        // PRIORITY 3: Default to patient if no role found (allow login to proceed)
         if (!userRole) {
-          console.log('[RoleBasedRedirect] No role found yet, waiting for database sync...');
-          setIsRedirecting(false);
-          return;
+          console.log('[RoleBasedRedirect] No role found in Clerk or DB, defaulting to patient');
+          userRole = 'patient';
         }
         
         console.log('[RoleBasedRedirect] Using role:', userRole, 'for user:', user.id);
+        console.log('[RoleBasedRedirect] Profile complete:', isProfileComplete);
 
-        // Check if profile is complete for therapists
-        if (userRole === 'therapist' && !isProfileComplete) {
-          // Only redirect if not already on the therapist onboarding page
-          if (pathname !== '/therapist/onboarding') {
-            console.log('Therapist profile incomplete, redirecting to onboarding');
-            router.push('/therapist/onboarding');
-          }
+        // Only enforce profile completion on /dashboard route
+        // This allows existing users to access their dashboards directly
+        const shouldCheckProfile = pathname === '/dashboard' || pathname === '/dashboard/redirect';
+
+        console.log('[RoleBasedRedirect] Profile check details:', {
+          shouldCheckProfile,
+          userRole,
+          hasDbUser: !!dbUser,
+          isProfileComplete,
+          pathname
+        });
+
+        // Check if profile is complete for therapists (only if on dashboard route)
+        if (shouldCheckProfile && userRole === 'therapist' && dbUser && !isProfileComplete) {
+          console.log('🔄 Therapist profile incomplete, redirecting to onboarding');
+          router.push('/therapist/onboarding');
           return;
         }
 
-        // Check if profile is complete for patients
-        if (userRole === 'patient' && !isProfileComplete) {
-          // Only redirect if not already on the patient details page
-          if (pathname !== '/patient-details') {
-            console.log('Patient profile incomplete, redirecting to patient details onboarding');
-            router.push('/patient-details');
-          }
+        // Check if profile is complete for patients (only if on dashboard route)
+        if (shouldCheckProfile && userRole === 'patient' && dbUser && !isProfileComplete) {
+          console.log('🔄 Patient profile incomplete, redirecting to patient details onboarding');
+          router.push('/patient-details');
           return;
         }
 
@@ -102,37 +107,12 @@ export default function RoleBasedRedirect() {
       }
     };
 
-    // Add a small delay to prevent immediate redirects
-    const timeout = setTimeout(handleRedirect, 500);
+    // Add a small delay to allow Clerk to fully load
+    const timeout = setTimeout(handleRedirect, 300);
     return () => clearTimeout(timeout);
-  }, [user, isLoaded, dbUser, loading, router, isProfileComplete, pathname]);
+  }, [user, isLoaded, dbUser, loading, router, isProfileComplete, pathname, isRedirecting]);
 
-  // Show profile completion if user exists but profile is not complete
-  if (isLoaded && user && dbUser && !isProfileComplete && !isRedirecting) {
-    const userRole = user?.publicMetadata?.role || user?.unsafeMetadata?.role || dbUser?.role;
-    if (userRole === 'therapist') {
-      // Only redirect if not already redirecting
-      return (
-        <div className="min-h-screen bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Redirecting to therapist onboarding...</p>
-          </div>
-        </div>
-      );
-    }
-    if (userRole === 'patient') {
-      return (
-        <div className="min-h-screen bg-linear-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-            <p className="text-gray-600">Redirecting to patient onboarding...</p>
-          </div>
-        </div>
-      );
-    }
-    return <ProfileCompletion />;
-  }
+  // Don't show loading screen - let the redirect handle it
 
   // Show loading state while redirecting
   return (

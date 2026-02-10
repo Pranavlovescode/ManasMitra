@@ -16,17 +16,17 @@ const UserSchema = new mongoose.Schema({
   },
   firstName: {
     type: String,
-    required: true,
+    default: '',
     trim: true
   },
   lastName: {
     type: String,
-    required: true,
+    default: '',
     trim: true
   },
   role: {
     type: String,
-    enum: ['patient', 'therapist'],
+    enum: ['patient', 'therapist', 'admin'],
     required: true
   },
   profileComplete: {

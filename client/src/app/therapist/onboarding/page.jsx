@@ -312,6 +312,15 @@ export default function TherapistOnboarding() {
     }
   };
 
+  // Skip onboarding and go directly to dashboard
+  const handleSkip = () => {
+    console.log('Skipping therapist onboarding');
+    // Clear saved data
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(STEP_STORAGE_KEY);
+    router.push('/therapist/dashboard');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -617,24 +626,33 @@ export default function TherapistOnboarding() {
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </button>
                 ) : (
-                  <button
-                    type="button"
-                    onClick={handleSubmit}
-                    disabled={loading}
-                    className="px-8 py-3 bg-linear-to-r from-purple-400 to-pink-500 text-white rounded-lg font-medium hover:from-purple-500 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-all duration-200 transform hover:scale-105 shadow-lg"
-                  >
-                    {loading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                        Completing Profile...
-                      </>
-                    ) : (
-                      <>
-                        Complete Profile
-                        <CheckCircle className="w-5 h-5 ml-2" />
-                      </>
-                    )}
-                  </button>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={handleSkip}
+                      className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors duration-200"
+                    >
+                      Skip for now
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSubmit}
+                      disabled={loading}
+                      className="px-8 py-3 bg-linear-to-r from-purple-400 to-pink-500 text-white rounded-lg font-medium hover:from-purple-500 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center transition-all duration-200 transform hover:scale-105 shadow-lg"
+                    >
+                      {loading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                          Completing Profile...
+                        </>
+                      ) : (
+                        <>
+                          Complete Profile
+                          <CheckCircle className="w-5 h-5 ml-2" />
+                        </>
+                      )}
+                    </button>
+                  </div>
                 )}
               </div>
             </form>

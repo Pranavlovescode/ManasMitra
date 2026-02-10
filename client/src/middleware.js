@@ -17,6 +17,10 @@ const isPublicApiRoute = createRouteMatcher([
   '/api/health',
 ]);
 
+const isPublicRoute = createRouteMatcher([
+  '/debug-auth-state(.*)',
+]);
+
 const isAuthRoute = createRouteMatcher([
   '/sign-in(.*)',
   '/sign-up(.*)',
@@ -30,6 +34,12 @@ const isAdminRoute = createRouteMatcher(['/admin(.*)']);
 export default clerkMiddleware((auth, req) => {
   // Skip auth for public API routes (webhooks, health checks)
   if (isPublicApiRoute(req)) {
+    console.log('Skipping auth for public route:', req.url);
+    return;
+  }
+
+  // Skip auth for public routes like debug pages
+  if (isPublicRoute(req)) {
     console.log('Skipping auth for public route:', req.url);
     return;
   }

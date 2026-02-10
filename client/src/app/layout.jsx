@@ -23,8 +23,8 @@ export default function RootLayout({ children }) {
     <ClerkProvider
       signInUrl="/sign-in"
       signUpUrl="/sign-up"
-      afterSignInUrl="/dashboard/redirect"
-      afterSignUpUrl="/dashboard/redirect"
+      afterSignInUrl="/dashboard"
+      afterSignUpUrl="/dashboard"
     >
       <html lang="en">
         <body

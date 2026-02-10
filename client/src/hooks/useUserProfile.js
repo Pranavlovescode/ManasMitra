@@ -51,20 +51,27 @@ export function useUserProfile() {
           console.warn('User not authenticated. Please sign in.');
           setError('Please sign in to continue');
           setDbUser(null);
+          setLoading(false);
           return;
         }
 
-        console.error('Profile fetch error:', response.status, errorData);
-        throw new Error(errorData.error || 'Failed to fetch user profile');
+        // Database error - don't block login, just log it
+        console.warn('⚠️ [useUserProfile] Database unavailable, will use Clerk data only:', errorData);
+        setError('Database temporarily unavailable');
+        setDbUser(null);
+        setLoading(false);
+        return;
       }
 
       const userData = await response.json();
       console.log('✅ [useUserProfile] Profile fetched successfully');
+      console.log('📊 [useUserProfile] Profile complete flag:', userData.profileComplete);
       setDbUser(userData);
       setError(null);
     } catch (err) {
-      console.error('❌ [useUserProfile] Error fetching user profile:', err);
-      setError(err.message);
+      // Don't block login on database errors
+      console.warn('⚠️ [useUserProfile] Database error (non-blocking):', err.message);
+      setError('Database temporarily unavailable');
       setDbUser(null);
     } finally {
       setLoading(false);
@@ -72,15 +79,6 @@ export function useUserProfile() {
   };
 
   useEffect(() => {
-    // Reset state when user changes (important for logout/login scenarios)
-    if (user?.id && dbUser?.clerkId && user.id !== dbUser.clerkId) {
-      console.log('🔄 [useUserProfile] User ID mismatch detected - clearing stale data');
-      console.log('  - Current Clerk user:', user.id);
-      console.log('  - Cached DB user:', dbUser.clerkId);
-      setDbUser(null);
-      setError(null);
-    }
-    
     // Add a small delay to ensure session is fully established
     const timeoutId = setTimeout(fetchUserProfile, 100);
     return () => clearTimeout(timeoutId);
@@ -104,17 +102,13 @@ export function useUserProfile() {
 function checkProfileCompleteness(user) {
   if (!user) return false;
 
-  // Common required fields
-  const commonFields = ["firstName", "lastName", "email", "role"];
-  const hasCommonFields = commonFields.every(
-    (field) => user[field] && user[field].trim() !== ""
-  );
-
-  if (!hasCommonFields) return false;
-
-  // For both patients and therapists, rely on the profileComplete flag
+  // Trust the profileComplete flag from the database
   // This flag is set to true when:
   // - Patients complete their detailed information via /api/patients
   // - Therapists complete their onboarding process
-  return user.profileComplete === true;
+  const isComplete = user.profileComplete === true;
+  
+  console.log('[checkProfileCompleteness] User role:', user.role, 'profileComplete:', user.profileComplete, 'returning:', isComplete);
+  
+  return isComplete;
 }

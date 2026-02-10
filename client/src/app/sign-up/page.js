@@ -115,7 +115,10 @@ function SignUpContent() {
                 path="/sign-up"
                 routing="path"
                 signInUrl="/sign-in"
-                afterSignUpUrl="/dashboard"
+                afterSignUpUrl={`/sign-up/confirm-role?role=${userRole}`}
+                unsafeMetadata={{
+                  role: userRole
+                }}
                 appearance={{
                   elements: {
                     formButtonPrimary: `bg-linear-to-r ${config.color} ${config.hoverColor} text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg`,
@@ -129,9 +132,6 @@ function SignUpContent() {
                   variables: {
                     colorPrimary: userRole === 'patient' ? '#10b981' : '#8b5cf6',
                   }
-                }}
-                initialValues={{
-                  publicMetadata: { role: userRole }
                 }}
               />
           </div>

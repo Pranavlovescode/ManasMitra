@@ -470,6 +470,12 @@ export default function PatientDetailsPage() {
     }
   };
 
+  // Skip onboarding and go directly to dashboard
+  const handleSkip = () => {
+    console.log('Skipping patient details onboarding');
+    router.push('/patient/dashboard');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -1332,16 +1338,26 @@ export default function PatientDetailsPage() {
                   Next
                 </Button>
               ) : (
-                <Button className={"bg-green-500"} type="submit" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    'Complete Profile'
-                  )}
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    type="button" 
+                    onClick={handleSkip}
+                    variant="outline"
+                    className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                  >
+                    Skip for now
+                  </Button>
+                  <Button className={"bg-green-500"} type="submit" disabled={loading}>
+                    {loading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      'Complete Profile'
+                    )}
+                  </Button>
+                </div>
               )}
             </div>
           </Card>
